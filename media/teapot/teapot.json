@@ -1,0 +1,35 @@
+{
+	"camera" :
+	{
+		"id" : "Camera_001-camera",
+		"name" : "Camera.002",
+		"xfov" : 50,
+		"yfov" : 35,
+		"znear" : 0.1,
+		"zfar" : 10000.0,
+		"aspect_ratio" : 1.777778,
+		"up_axis" : "Y_UP",
+		"target_position" : [0.563858,1.59684,1.898],
+		"dir2cam" : [11.4703,15.3331,-15.466]
+	},
+    "lights" :
+	[
+		{
+			"id" : "Directional-light",
+			"name" : "Directional",
+			"type" : "directional",
+			"direction" : [0, -1, 0]
+		}
+	]
+	,
+    "meshes" :
+	[
+		{
+			"filename" : "teapot.obj",
+            "material" : "mirror",
+			"environment_filename" : "../textures/streetscene.png",
+			"vertex_shader_filename" : "../shader.vert",
+			"fragment_shader_filename" : "../shader.frag"
+		}
+	]
+}

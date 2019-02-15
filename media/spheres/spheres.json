@@ -1,0 +1,83 @@
+{
+	"camera" :
+	{
+		"id" : "Camera_001-camera",
+		"name" : "Camera.002",
+		"xfov" : 50,
+		"yfov" : 35,
+		"znear" : 0.1,
+		"zfar" : 10000.0,
+		"aspect_ratio" : 1.777778,
+		"up_axis" : "Y_UP",
+		"target_position" : [0, 0, 0],
+		"dir2cam" : [0, 25, 180]
+	},
+    "lights" :
+	[
+		{
+			"id" : "Directional-light",
+			"name" : "Directional",
+			"type" : "directional",
+			"direction" : [-1, -1, -1]
+		}
+	]
+	,
+    "meshes" :
+	[
+
+{
+			"filename" : "sphere.obj",
+            "translate" : [-50, 0, 0],
+            "material" : "phong",
+			"diffuse_filename" : "../textures/Blue_Marble_002_COLOR.png",
+			"normal_filename" : "../textures/Blue_Marble_002_NORM.png",
+			"spec_exp" : 10.0,
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 1,
+            "texcoord_v_scale" : 1,
+			"vertex_shader_filename" : "../shader.vert",
+			"fragment_shader_filename" : "../shader.frag"
+		},
+        
+		{
+			"filename" : "sphere.obj",
+            "translate" : [0, 0, 0],
+            "material" : "phong",
+            "spec_exp" : 20.0,
+			"diffuse_filename" : "../textures/brick_color_map.png",
+			"normal_filename" : "../textures/brick_normal_map.png",
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 1,
+            "texcoord_v_scale" : 1,
+			"vertex_shader_filename" : "../shader.vert",
+			"fragment_shader_filename" : "../shader.frag"
+		},
+        
+		{
+			"filename" : "sphere.obj",
+        	"translate" : [50, 0, 0],
+            "material" : "mirror",
+		    "environment_filename" : "../textures/streetscene.png",
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 1,
+            "texcoord_v_scale" : 1,
+			"vertex_shader_filename" : "../shader.vert",
+			"fragment_shader_filename" : "../shader.frag"
+		},
+        
+		{
+			"filename" : "plane.obj",
+            "translate" : [0, -25, 0],
+            "material" : "phong",
+			"diffuse_filename" : "../textures/Stone_Tiles_003_COLOR.png",
+            "normal_filename" : "../textures/Stone_Tiles_003_NORM.png",
+            "spec_exp" : 20.0,
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 4,
+            "texcoord_v_scale" : 4,
+			"vertex_shader_filename" : "../shader.vert",
+			"fragment_shader_filename" : "../shader.frag"
+		}
+        
+	]
+}
