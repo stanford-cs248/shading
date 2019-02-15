@@ -95,7 +95,7 @@ You should see an image that looks a bit like the one below:
 
 __What you need to do:__
 
-Notice that the scene is rendered with a texture map on the ground plane and two of the three spheres, but there is no lighting in the rendering. To add basic lighting, we'd like you to implement `Phong_BRDF()` in `media/shader.frag`. This function should implement the [Phong Reflectance](https://en.wikipedia.org/wiki/Phong_reflection_model) model.  Your implementation should compute the diffuse and ambient components of this reflectance model in `BRDF_Evaluate()`.  Note that the ambient term is independent of scene light sources and should be added in to the total surface reflectance outside of the light integration loops (the starter code already does this).  
+Notice that the scene is rendered with a texture map on the ground plane and two of the three spheres, but there is no lighting in the rendering. To add basic lighting, we'd like you to implement `Phong_BRDF()` in `media/shader.frag`. This function should implement the [Phong Reflectance](https://en.wikipedia.org/wiki/Phong_reflection_model) model.  Your implementation should compute the diffuse and ambient components of this reflectance model in `Phong_BRDF()`.  Note that the ambient term is independent of scene light sources and should be added in to the total surface reflectance outside of the light integration loops (the starter code already does this).  
 
 A correct implementation of Phong reflectance should yield shaded spheres, which should look like this.
 
