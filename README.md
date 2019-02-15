@@ -38,7 +38,7 @@ $ sudo apt-get install xorg-dev
 #### To build your code for this assignment on OS X or Linux:
 
 ```
-$ cd Render && mkdir build && cd build
+$ cd shading && mkdir build && cd build
 $ cmake ..
 $ make
 ```
@@ -55,9 +55,9 @@ Then, press `Configure` button, select proper version of Visual Studio (**You sh
 
 ![Sample locations](misc/cmake_final_setup.png?raw=true)
 
-This should create a `build` directory with a Visual Studio solution file in it named `render.sln`. You can double-click this file to open the solution in Visual Studio.
+This should create a `build` directory with a Visual Studio solution file in it named `shading.sln`. You can double-click this file to open the solution in Visual Studio.
 
-If you plan on using Visual Studio to debug your program, you can change `render` project in the Solution Explorer as the startup project by right-clicking on it and selecting `Set as StartUp Project`. You can also set the command line arguments to the project by right-clicking `render` project again, selecting `Properties`, going into the `Debugging` tab, and setting the value in `Command Arguments`. If you want to run the program with the test folder, you can set this command argument to `../../media/sphere/sphere.json`. After setting all these, you can hit F5\press `Local Windows Debugger` button to build your program and run it with the debugger.
+If you plan on using Visual Studio to debug your program, you can change `shading` project in the Solution Explorer as the startup project by right-clicking on it and selecting `Set as StartUp Project`. You can also set the command line arguments to the project by right-clicking `shading` project again, selecting `Properties`, going into the `Debugging` tab, and setting the value in `Command Arguments`. If you want to run the program with the test folder, you can set this command argument to `../../media/sphere/sphere.json`. After setting all these, you can hit F5\press `Local Windows Debugger` button to build your program and run it with the debugger.
 
 You should also change the build mode to `Release` from `Debug` occasionally by clicking the Solution Configurations drop down menu on the top menu bar, which will make your program run faster. Note that you will have to set `Command Arguments` again if you change the build mode. Note that your application must run properly in both debug and release build.
 
