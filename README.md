@@ -47,7 +47,7 @@ These 3 steps (1) create an out-of-source build directory, (2) configure the pro
 
 ### Windows Build Instructions
 
-You need to install the latest version of [CMake](http://www.cmake.org/) and [Visual Studio](https://www.visualstudio.com/). Visual Studio Community is free. After installing these programs, replace `SOURCE_DIR` to the cloned directory (`Render/` in our case), and `BUILD_DIR` to `SOURCE_DIR/build`.
+You need to install the latest version of [CMake](http://www.cmake.org/) and [Visual Studio](https://www.visualstudio.com/). Visual Studio Community is free. After installing these programs, replace `SOURCE_DIR` to the cloned directory (`shading/` in our case), and `BUILD_DIR` to `SOURCE_DIR/build`.
 
 ![Sample locations](misc/cmake_initial_setup.png?raw=true)
 
@@ -55,9 +55,9 @@ Then, press `Configure` button, select proper version of Visual Studio (**You sh
 
 ![Sample locations](misc/cmake_final_setup.png?raw=true)
 
-This should create a `build` directory with a Visual Studio solution file in it named `shading.sln`. You can double-click this file to open the solution in Visual Studio.
+This should create a `build` directory with a Visual Studio solution file in it named `Render.sln`. You can double-click this file to open the solution in Visual Studio.
 
-If you plan on using Visual Studio to debug your program, you can change `shading` project in the Solution Explorer as the startup project by right-clicking on it and selecting `Set as StartUp Project`. You can also set the command line arguments to the project by right-clicking `shading` project again, selecting `Properties`, going into the `Debugging` tab, and setting the value in `Command Arguments`. If you want to run the program with the test folder, you can set this command argument to `../../media/sphere/sphere.json`. After setting all these, you can hit F5\press `Local Windows Debugger` button to build your program and run it with the debugger.
+If you plan on using Visual Studio to debug your program, you must change `render` project in the Solution Explorer as the startup project by right-clicking on it and selecting `Set as StartUp Project`. You can also set the command line arguments to the project by right-clicking `render` project again, selecting `Properties`, going into the `Debugging` tab, and setting the value in `Command Arguments`. If you want to run the program with the test folder, you can set this command argument to `../../media/spheres/spheres.json`. After setting all these, you can hit F5\press `Local Windows Debugger` button to build your program and run it with the debugger.
 
 You should also change the build mode to `Release` from `Debug` occasionally by clicking the Solution Configurations drop down menu on the top menu bar, which will make your program run faster. Note that you will have to set `Command Arguments` again if you change the build mode. Note that your application must run properly in both debug and release build.
 
@@ -71,7 +71,7 @@ A table of all the keyboard controls in the application is provided below.
 
 ### Part 1: Implementing Phong Reflectance (30%)
 
-To complete this assignment, you'll be writing shaders in a language called GLSL (OpenGL Shading Language).  GLSL's syntax is C/C++ "like", but it features a number of built in types specific to graphics. In this assignment, there are two shaders, a __vertex shader__ `shader.vert` that is executed _once per vertex_ of each rendered triangle mesh.  And a __fragment shader__ `shader.frag` that executes _once per fragment_ (a.k.a. once per screen sample covered by a triangle.)
+To complete this assignment, you'll be writing shaders in a language called GLSL (OpenGL Shading Language).  GLSL's syntax is C/C++ "like", but it features a number of built in types specific to graphics. In this assignment, there are two shaders, a __vertex shader__ `media/shader.vert` that is executed _once per vertex_ of each rendered triangle mesh.  And a __fragment shader__ `media/shader.frag` that executes _once per fragment_ (a.k.a. once per screen sample covered by a triangle.)
 
 We didn't specifically talk about the specifics of GLSL programming in class, so you'll have to pick it up on your own. Fortunately, there are a number of great GLSL tutorials online, but we recommend [The Book of Shaders](https://thebookofshaders.com/).  Here are a few things to know:
 
@@ -120,7 +120,7 @@ First, modify the vertex shader `shader.vert` to compute a transform `tan2World`
 
 Second, in `shader.frag`, you need to sample the normal map (see `normalTextureSampler`), and then use `tan2World` to compute a world space normal at the current surface sample point.
 
-We recommend that you debug normal mapping on the sphere scene (`media/sphere/sphere.json`).  
+We recommend that you debug normal mapping on the sphere scene (`media/spheres/spheres.json`).  
 
 Without normal mapping, the sphere looks like a flat sphere with a brick texture, as shown at left. But with normal mapping, notice how the bumpy surface creates more plausible reflective highlights in the rendering on the right.
 
