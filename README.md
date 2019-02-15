@@ -99,7 +99,7 @@ Notice that the scene is rendered with a texture map on the ground plane and two
 
 A correct implementation of Phong reflectance should yield shaded spheres, which should look like this.
 
-![Spheres with phong](misc/part2.jpg?raw=true)
+![Spheres with phong](misc/step2.jpg?raw=true)
 
 ### Part 2: Normal mapping (30%)
 
