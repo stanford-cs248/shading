@@ -69,7 +69,7 @@ A table of all the keyboard controls in the application is provided below.
 | ---------------------------------------- | :---: |
 | Print camera parameters                  | SPACE |
 
-### Part 1: Implementing Phong Reflectance (30%)
+## Getting Oriented in the Code ##
 
 To complete this assignment, you'll be writing shaders in a language called GLSL (OpenGL Shading Language).  GLSL's syntax is C/C++ "like", but it features a number of built in types specific to graphics. In this assignment, there are two shaders, a __vertex shader__ `media/shader.vert` that is executed _once per vertex_ of each rendered triangle mesh.  And a __fragment shader__ `media/shader.frag` that executes _once per fragment_ (a.k.a. once per screen sample covered by a triangle.)
 
@@ -81,7 +81,7 @@ We didn't specifically talk about the specifics of GLSL programming in class, so
 
 * The assignment starter code JIT compiles your GLSL vertex and fragment shaders on-the-fly when the `render` application starts running.  Therefore, you won't know if the code successfully compiles until run time.  If you see a black screen while rendering, it's likely because your GLSL shader failed to compile.  __Look to your console for error messages about a failed compile.__
 
-#### Part 1: Phong Reflectance (15%)
+### Part 1: Implementing Phong Reflectance (20%)
 
 In the first part of this assignment you will implement two important aspects of defining a material.  First, you will implement a simple BRDF that implements the phong reflectance model to render a shiny surface.
 
@@ -101,7 +101,7 @@ A correct implementation of Phong reflectance should yield shaded spheres, which
 
 ![Spheres with phong](misc/step2.jpg?raw=true)
 
-### Part 2: Normal mapping (30%)
+### Part 2: Normal mapping (25%)
 
 Although there is a texture map on the ground plane and spheres to add detail to these surfaces, the surfaces continue to look "flat". Your next task to implement [normal mapping](http://cs248.stanford.edu/winter19/lecture/texture/slide_039) to create the illusion of a surface having more detail that what is modeled by the underlying geometry.  They idea of normal mapping is to perturb the surface's geometric normal with an offset by a vector encoded in a texture map.  An example "normal map" is shown at right in the image below.
 
@@ -128,7 +128,7 @@ With a correct implementation of normal mapping the scene will look like this:
 
 ![Spheres with normal mapping](misc/step3.jpg?raw=true)
 
-### Part 3: Adding Environment Lighting (30%)
+### Part 3: Adding Environment Lighting (25%)
 
 So far, your shaders have used simple point and directional light sources in the scene. (Notice that in `shader.frag` the code iterated over light sources and accumulated reflectance.)  We'd now like you to implement a more complex form of light source.  This light source, called an image based environment light, described [here in lecture](http://cs248.stanford.edu/winter19/lecture/materials/slide_037) represents light incoming on the scene from an _infinitely far source, but from all directions_.  Pixel (x,y) in the texture map encodes the magnitude and color and light from the direction (phi, theta).  Phi and theta encode a direction in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
 
@@ -148,7 +148,7 @@ You'll also be able to render a reflective teapot (`media/teapot/teapot.json`), 
 
 ![Mirror teapot](misc/teapot_mirror.png?raw=true)
 
-### Part 4: To be released shortly
+### Part 4: To be released shortly (30 pts)
 
 __We will be releasing the final part of the assignment on Tuesday of next week.__
 
