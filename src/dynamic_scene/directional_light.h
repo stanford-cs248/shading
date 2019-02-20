@@ -12,7 +12,7 @@ class DirectionalLight : public SceneLight {
   DirectionalLight(const Collada::LightInfo& light_info,
                    const Matrix4x4& transform) {
     this->spectrum = light_info.spectrum;
-    this->direction = -(transform * Vector4D(light_info.direction, 1)).to3D();
+    this->direction = (transform * Vector4D(light_info.direction, 1)).to3D();
     this->direction.normalize();
   }
 

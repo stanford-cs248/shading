@@ -9,6 +9,7 @@
 
 #include "CS248/lodepng.h"
 
+//#define GLFW_INCLUDE_GLCOREARB
 #include "GLFW/glfw3.h"
 
 #include <sstream>
@@ -26,6 +27,20 @@ using Collada::PolymeshInfo;
 using Collada::SceneInfo;
 using Collada::SphereInfo;
 
+void checkGLError(std::string str) {
+    /*
+
+    // uncomment for debugging
+
+    GLenum err;
+    do {
+        err = glGetError();
+        if (err != GL_NO_ERROR)
+            printf("*** GL error: %s: %s\n", str.c_str(), gluErrorString(err));
+    } while (err != GL_NO_ERROR);
+    */
+}
+    
 Application::Application() {
   scene = nullptr;
 }
@@ -40,9 +55,13 @@ void Application::init() {
     scene = nullptr;
   }
 
+  checkGLError("pre text init");
+  
   textManager.init(use_hdpi);
   text_color = Color(1.0, 1.0, 1.0);
 
+  checkGLError("post text init");
+  
   // Setup all the basic internal state to default values,
   // as well as some basic OpenGL state (like depth testing
   // and lighting).
@@ -69,6 +88,8 @@ void Application::init() {
   mode = SHADER_MODE;
   action = Action::Navigate;
   scene = nullptr;
+  visualize_shadow_map = false;
+
 
   // Make a dummy camera so resize() doesn't crash before the scene has been
   // loaded.
@@ -83,6 +104,7 @@ void Application::init() {
   cameraInfo.fClip = 100;
   camera.configure(cameraInfo, screenW, screenH);
   canonicalCamera.configure(cameraInfo, screenW, screenH);
+
 }
 
 void Application::enter_2D_GL_draw_mode() {
@@ -123,20 +145,32 @@ void Application::render() {
     pickDrawCountdown--;
   }
 
+  // pass 1, generate shadow map for the first directional light source
+
+  if (scene->requires_shadow_pass())
+     scene->render_shadow_pass();
+
+  // pass 2, beauty pass, render the scene (using the shadow map)
+  
+  glViewport(0, 0, screenW, screenH);
+
   glClearColor(0., 0., 0., 0.);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  update_gl_camera();
 
-  switch (mode) {
-    case SHADER_MODE:
-		if (show_coordinates)
-            draw_coordinates();
-		scene->render_in_opengl();
-		if (show_hud)
-            draw_hud();
-      break;
-    default:
-      break;
+  if (visualize_shadow_map) {
+    scene->visualize_shadow_map();
+  } else {
+  
+    set_projection_matrix();
+    update_gl_camera();
+    
+    if (show_coordinates)
+        draw_coordinates();
+
+    scene->render_in_opengl();
+
+    if (show_hud)
+        draw_hud();
   }
 }
 
@@ -157,6 +191,8 @@ void Application::update_gl_camera() {
   const Vector3D &c = camera.position();
   const Vector3D &r = camera.view_point();
   const Vector3D &u = camera.up_dir();
+
+  //cout << camera.position() << endl;
 
   gluLookAt(c.x, c.y, c.z, r.x, r.y, r.z, u.x, u.y, u.z);
 
@@ -183,14 +219,7 @@ void Application::set_projection_matrix() {
 string Application::name() { return "Shader Assignment"; }
 
 string Application::info() {
-  switch (mode) {
-    case SHADER_MODE:
-      return "Shader";
-      break;
-    default:
-      return "";
-      break;  
-  }
+  return "";
 }
 
 string Application::pattern_info() {
@@ -267,7 +296,7 @@ void Application::load(SceneInfo *sceneInfo) {
     LightInfo default_light = LightInfo();
     lights.push_back(new DynamicScene::AmbientLight(default_light));
   }
-  scene = new DynamicScene::Scene(objects, lights);
+  scene = new DynamicScene::Scene(objects, lights, sceneInfo->base_shader_dir);
   scene->patterns = patterns;
 
   const BBox &bbox = scene->get_bbox();
@@ -341,8 +370,7 @@ void Application::init_camera(CameraInfo &cameraInfo,
 
 void Application::reset_camera() { camera.copy_placement(canonicalCamera); }
 
-DynamicScene::SceneLight *Application::init_light(LightInfo &light,
-                                                  const Matrix4x4 &transform) {
+DynamicScene::SceneLight *Application::init_light(LightInfo &light, const Matrix4x4 &transform) {
   switch (light.light_type) {
     case Collada::LightType::NONE:
       break;
@@ -455,50 +483,23 @@ void Application::char_event(unsigned int codepoint) {
         case 'P':
             toggle_pattern_action();
             break;
-            /*
-        case '[':
-        case '{':
-            if(action == Action::Iterate_Pattern) scene->prevPattern();
-            break;
-        case ']':
-        case '}':
-            if(action == Action::Iterate_Pattern) scene->nextPattern();
-            break;
-        case '1':
-        case '!':
-            if(action == Action::Iterate_Pattern) scene->current_pattern_subid = 0;
-            break;
-        case '2':
-        case '@':
-            if(action == Action::Iterate_Pattern) scene->current_pattern_subid = 1;
-            break;
-        case '3':
-        case '#':
-            if(action == Action::Iterate_Pattern) scene->current_pattern_subid = 2;
-            break;
-            */
-        case '-':
-        case '_':
-            scene->decreaseCurrentPattern();
-            break;
-        case '=':
-        case '+':
-            scene->increaseCurrentPattern();
-            break;
-		case 'r':
-			reset_camera();
-			break;
-        case ' ':
-			std::cout << "[required] Camera.target_position = " << camera.view_point() << std::endl;
-			std::cout << "[required] Camera.dir2cam = " << camera.position() - camera.view_point() << std::endl << std::endl;
-
-            std::cout << "[optional] Camera.v_fov = " << camera.v_fov() << std::endl;
-            std::cout << "[optional] Camera.aspect_ratio = " << camera.aspect_ratio() << std::endl;
-            std::cout << "[optional] Camera.near_clip = " << camera.near_clip() << std::endl;
-            std::cout << "[optional] Camera.far_clip = " << camera.far_clip() << std::endl;
-			std::cout << "[optional] Camera.position = " << camera.position() << std::endl;
-			std::cout << "[optional] Camera.up_dir = " << camera.up_dir() << std::endl;
-			break;
+        case 'v':
+        case 'V':
+          visualize_shadow_map = !visualize_shadow_map;
+          break;
+        case 'c':
+        case 'C':
+          printf("Current camera info:\n");
+          cout << "Pos:          " << camera.position() << endl;
+          cout << "Lookat:       " << camera.view_point() << endl;
+          cout << "Up:           " << camera.up_dir() << endl;
+          cout << "aspect_ratio: " << camera.aspect_ratio() << endl;
+          cout << "near_clip:    " << camera.near_clip() << endl;
+          cout << "far_clip:     " << camera.far_clip() << endl;
+          break;
+    		case 'r':
+		      	reset_camera();
+			     break;
       }
   }
 }

@@ -59,10 +59,11 @@ class Application : public Renderer {
   void render_scene(std::string saveFileLocation);
 
  private:
-  // Mode determines which type of data is visualized/
+  // Mode determines which type of data is visualized
   // which mode we're currently in (e.g., modeling vs. rendering vs. animation)
   enum Mode { SHADER_MODE };
   Mode mode;
+  bool visualize_shadow_map;
 
   // Action determines which action will be taken when
   // the user clicks/drags/etc.
@@ -159,8 +160,7 @@ class Application : public Renderer {
   // HUD //
   bool show_hud;
   void draw_hud();
-  inline void draw_string(float x, float y, string str, size_t size,
-                          const Color& c);
+  inline void draw_string(float x, float y, string str, size_t size, const Color& c);
 
   bool lastEventWasModKey;
 
@@ -171,6 +171,7 @@ class Application : public Renderer {
   // Intersects mouse position x, y in screen coordinates with a plane
   // going through the origin, and returns the intersecting position
   Vector3D getMouseProjection(double dist=std::numeric_limits<double>::infinity());
+
 };  // class Application
 
 }  // namespace CS248

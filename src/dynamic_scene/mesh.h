@@ -35,6 +35,7 @@ class Mesh : public SceneObject {
   ~Mesh();
 
   virtual void draw() override;
+  virtual void draw_shadow() override;
 
   void draw_pretty() override;
 
@@ -46,7 +47,8 @@ class Mesh : public SceneObject {
 
  private:
   // Helpers for draw().
-  void draw_faces(bool smooth = false) const;
+  void draw_faces(bool smooth, bool is_shadow_pass) const;
+  void draw_pass(bool is_shadow_pass);
 
   // Texture map
   vector<unsigned char> diffuse_texture;
@@ -93,8 +95,7 @@ class Mesh : public SceneObject {
 
   float glObj2World[16];
   float glObj2WorldNorm[9];
-    
-  GLuint vao;
+  float glObj2ShadowLight[SCENE_MAX_SHADOWED_LIGHTS][16];
   
   GLuint vertexBuffer;
   GLuint diffuse_colorBuffer;

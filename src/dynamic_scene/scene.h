@@ -12,13 +12,19 @@
 #include "GL/glew.h"
 
 #include "../camera.h"
+#include "../shader.h"
 
 #include "../static_scene/scene.h"
 #include "../static_scene/light.h"
 
+#define SCENE_MAX_SHADOWED_LIGHTS 2
+
 typedef std::vector<std::string> Info;
 
 namespace CS248 {
+
+void checkGLError(string str);
+    
 namespace DynamicScene {
 
 // Forward declarations
@@ -51,6 +57,7 @@ class SceneObject {
    * matrices have already been set up.
    */
   virtual void draw() = 0;
+  virtual void draw_shadow() {};  // don't require draw_shadow()
 
   virtual void draw_pretty() { draw(); }
 
@@ -144,7 +151,7 @@ class SceneLight {
  */
 class Scene {
  public:
-  Scene(std::vector<SceneObject *> _objects, std::vector<SceneLight *> _lights);
+  Scene(std::vector<SceneObject *> _objects, std::vector<SceneLight *> _lights, const std::string& base_shader_dir);
   ~Scene();
 
   static Scene deep_copy(Scene s);
@@ -168,6 +175,15 @@ class Scene {
    */
   void render_in_opengl();
 
+  // renders a shadow pass
+  void render_shadow_pass();
+
+  // visualization mode
+  void visualize_shadow_map();
+    
+  // true if shadow pass is necessary
+  bool requires_shadow_pass() const { return do_shadow_pass; }
+
   /**
    * Gets a bounding box for the entire scene in world space coordinates.
    * May not be the tightest possible.
@@ -182,6 +198,11 @@ class Scene {
   void nextPattern();
   void decreaseCurrentPattern(double scale = 1);
   void increaseCurrentPattern(double scale = 1);
+
+  Shader*   get_shadow_shader() { return shadow_shader; }
+  GLuint    get_shadow_texture(int lightid) { return shadow_texture[lightid]; }
+  Matrix4x4 get_world_to_shadowlight(int lightid) { return world_to_shadowlight[lightid]; }
+  int       get_num_shadowed_lights() const;
 
   /**
    * Builds a static scene that's equivalent to the current scene and is easier
@@ -205,19 +226,28 @@ class Scene {
   std::vector<StaticScene::SphereLight *> sphere_lights;
 
   Camera *camera;
+
+  bool     do_shadow_pass;
+  int      shadow_texture_size;
+  Shader*  shadow_shader;
+  Shader*  shadow_shader2;
+  Shader*  shadow_viz_shader;
+  GLuint   shadow_framebuffer[SCENE_MAX_SHADOWED_LIGHTS];
+  GLuint   shadow_texture[SCENE_MAX_SHADOWED_LIGHTS];  
+  GLuint   shadow_color_texture[SCENE_MAX_SHADOWED_LIGHTS];
+  Matrix4x4 world_to_shadowlight[SCENE_MAX_SHADOWED_LIGHTS];
+    
 };
 
 // Mapping between integer and 8-bit RGB values (used for picking)
-static inline void IndexToRGB(int i, unsigned char &R, unsigned char &G,
-                              unsigned char &B) {
+static inline void IndexToRGB(int i, unsigned char &R, unsigned char &G, unsigned char &B) {
   R = (i & 0x000000FF) >> 0;
   G = (i & 0x0000FF00) >> 8;
   B = (i & 0x00FF0000) >> 16;
 }
 
 // Mapping between 8-bit RGB values and integer (used for picking)
-static inline int RGBToIndex(unsigned char R, unsigned char G,
-                             unsigned char B) {
+static inline int RGBToIndex(unsigned char R, unsigned char G, unsigned char B) {
   return R + G * 256 + 256 * 256 * B;
 }
 

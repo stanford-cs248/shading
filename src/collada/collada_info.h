@@ -48,6 +48,7 @@ struct Node {
   The scene that ColladaParser generates and passes to MeshEdit.
 */
 struct SceneInfo {
+  std::string base_shader_dir; 
   vector<Node> nodes;
 };
 

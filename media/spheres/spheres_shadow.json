@@ -1,0 +1,127 @@
+{
+    "base_shader_dir" : "..",
+    
+	"camera" :
+	{
+		"id" : "Camera_001-camera",
+		"name" : "Camera.002",
+		"xfov" : 50,
+		"yfov" : 35,
+		"znear" : 0.1,
+		"zfar" : 10000.0,
+		"aspect_ratio" : 1.777778,
+		"up_axis" : "Y_UP",
+		"target_position" : [0, 0, 0],
+		"dir2cam" : [13, 31, 162]
+	},
+    
+    "lights" :
+	[
+		{
+			"id" : "spotlight",
+		    "name" : "main_spotlight",
+			"type" : "spot",
+            "position" : [100, 100, 100],
+			"direction" : [-1, -1, -1],
+            "falloff_deg" : 20.0,
+            "intensity" : [20000, 20000, 20000]
+		},
+
+        {
+			"id" : "spotlight",
+		    "name" : "main_spotlight",
+			"type" : "spot",
+            "position" : [-100, 100, 100],
+			"direction" : [1, -1, -1],
+            "falloff_deg" : 20.0,
+            "intensity" : [20000, 6000, 6000]
+		}
+	],
+    
+    "meshes" :
+	[
+        {
+			"filename" : "sphere.obj",
+            "translate" : [-45, 0, 0],
+            "material" : "phong",
+			"diffuse_filename" : "../textures/Blue_Marble_002_COLOR.png",
+			"normal_filename" : "../textures/Blue_Marble_002_NORM.png",
+			"spec_exp" : 10.0,
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 1,
+            "texcoord_v_scale" : 1,
+			"vertex_shader_filename" : "../shader_shadow.vert",
+			"fragment_shader_filename" : "../shader_shadow.frag"
+		},
+        
+		{
+			"filename" : "sphere.obj",
+            "translate" : [0, 0, 0],
+            "material" : "phong",
+            "spec_exp" : 20.0,
+			"diffuse_filename" : "../textures/brick_color_map.png",
+			"normal_filename" : "../textures/brick_normal_map.png",
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 1,
+            "texcoord_v_scale" : 1,
+			"vertex_shader_filename" : "../shader_shadow.vert",
+			"fragment_shader_filename" : "../shader_shadow.frag"
+		},
+
+		{
+			"filename" : "sphere.obj",
+            "translate" : [-22, -14.5, 20],
+            "scale" : [0.3, 0.3, 0.3],
+            "material" : "phong",
+            "spec_exp" : 20.0,
+			"diffuse_filename" : "../textures/Quartz_001_COLOR.png",
+			"normal_filename" : "../textures/Quartz_001_NORM.png",
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 1,
+            "texcoord_v_scale" : 1,
+			"vertex_shader_filename" : "../shader_shadow.vert",
+			"fragment_shader_filename" : "../shader_shadow.frag"
+		},
+
+        {
+			"filename" : "sphere.obj",
+            "translate" : [22, -14.5, 20],
+            "scale" : [0.3, 0.3, 0.3],
+            "material" : "phong",
+            "spec_exp" : 20.0,
+			"diffuse_filename" : "../textures/Red_Marble_001_COLOR.png",
+			"normal_filename" : "../textures/Red_Marble_001_NRM.png",
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 1,
+            "texcoord_v_scale" : 1,
+			"vertex_shader_filename" : "../shader_shadow.vert",
+			"fragment_shader_filename" : "../shader_shadow.frag"
+		},
+        
+		{
+			"filename" : "sphere.obj",
+        	"translate" : [45, 0, 0],
+            "material" : "mirror",
+		    "environment_filename" : "../textures/grace_env.png",
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 1,
+            "texcoord_v_scale" : 1,
+			"vertex_shader_filename" : "../shader_shadow.vert",
+			"fragment_shader_filename" : "../shader_shadow.frag"
+		},
+        
+		{
+			"filename" : "plane.obj",
+            "translate" : [0, -20, 0],
+            "material" : "phong",
+			"diffuse_filename" : "../textures/Stone_Tiles_003_COLOR.png",
+            "normal_filename" : "../textures/Stone_Tiles_003_NORM.png",
+            "spec_exp" : 20.0,
+			"texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 4,
+            "texcoord_v_scale" : 4,
+			"vertex_shader_filename" : "../shader_shadow.vert",
+			"fragment_shader_filename" : "../shader_shadow.frag"
+		}    
+	]
+}

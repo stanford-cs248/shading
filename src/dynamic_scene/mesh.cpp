@@ -49,9 +49,10 @@ Mesh::Mesh(Collada::PolymeshInfo &polyMesh, const Matrix4x4 &transform, const st
     //printf("   num normals:   %lu\n", polyMesh.normals.size());
     //printf("   num texcoords: %lu\n", polyMesh.texcoords.size());
     
-    // hack: move the transform (parsed from the scene json) into the object's position
-    position = Vector3D(transform[3][0], transform[3][1], transform[3][3]);
-    //cout << "translate: " << position << std::endl;
+    // hack: move the transform (parsed from the scene json) into the object's position in the scene graph
+    // there's definitely a cleaner way to do this since the Mesh class has its own transforms associated with it.
+    position = Vector3D(transform[3][0], transform[3][1], transform[3][2]);
+    scale = Vector3D(transform[0][0], transform[1][1], transform[2][2]);
 
 	this->vertices.reserve(polyMesh.vertices.size());
 	this->normals.reserve(polyMesh.normals.size());
@@ -151,8 +152,6 @@ Mesh::Mesh(Collada::PolymeshInfo &polyMesh, const Matrix4x4 &transform, const st
 		this->tangentData.push_back(tangent);
 	}
 
-	glGenVertexArrays(1, &vao);
-	glBindVertexArray(vao);
 	glGenBuffers(1, &vertexBuffer);
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(Vector3Df) * vertexData.size(), (void*)&vertexData[0], GL_STATIC_DRAW);
@@ -263,12 +262,20 @@ void Mesh::draw_pretty() {
   // Enable lighting for faces
   glEnable(GL_LIGHTING);
   glDisable(GL_BLEND);
-  draw_faces(true);
+  draw_faces(true, false);
 
   glPopMatrix();
 }
 
 void Mesh::draw() {
+	draw_pass(false);
+}
+
+void Mesh::draw_shadow() {
+	draw_pass(true);
+}
+
+void Mesh::draw_pass(bool is_shadow_pass) {
   glPushMatrix();
 
   glTranslatef(position.x, position.y, position.z);
@@ -303,32 +310,63 @@ void Mesh::draw() {
       glObj2WorldNorm[idx++] = c[0]; glObj2WorldNorm[idx++] = c[1]; glObj2WorldNorm[idx++] = c[2];
   }  
   
-  glDisable(GL_BLEND);
-  glEnable(GL_LIGHTING);
-  draw_faces(false);
+  // make an object to shadow light space matrix here
+  if (!is_shadow_pass) {
 
+  	for (int light_id=0; light_id < scene->get_num_shadowed_lights(); light_id++) {
+	  	Matrix4x4 w2sl = scene->get_world_to_shadowlight(light_id);
+	  	Matrix4x4 o2sl = w2sl * xform;
+		idx = 0;
+	  	for (int i=0; i<4; i++) {
+	    	const Vector4D& c = o2sl.column(i); 
+	      	glObj2ShadowLight[light_id][idx++] = c[0];
+	      	glObj2ShadowLight[light_id][idx++] = c[1];
+	      	glObj2ShadowLight[light_id][idx++] = c[2];
+	      	glObj2ShadowLight[light_id][idx++] = c[3];
+	  	}
+	 }
+  }
+
+  draw_faces(false, is_shadow_pass);
   glPopMatrix();
 
 }
 
-void Mesh::draw_faces(bool smooth) const {
+void Mesh::draw_faces(bool smooth, bool is_shadow_pass) const {
+
+	checkGLError("begin draw faces");
 
     if (!simple_renderable)
         return;
-
-    //printf("Drawing object.\n");
-    //printf("num shaders = %lu\n", shaders.size());
     
-    for(int i = 0; i < shaders.size(); ++i) {
-        GLuint programID = shaders[i]._programID;
-      
-        glUseProgram(programID);
-	    glBindVertexArray(vao);
+    if (is_shadow_pass) {
 
-        for(int j = 0; j < scene->patterns.size(); ++j) {
+    	GLuint shadow_program_id = scene->get_shadow_shader()->_programID;
+        glUseProgram(shadow_program_id);
+
+	    int vert_loc = glGetAttribLocation(shadow_program_id, "vtx_position");
+	    if (vert_loc >= 0) {
+            glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+            glVertexAttribPointer(vert_loc, 3, GL_FLOAT, GL_FALSE, 0, 0);
+            glEnableVertexAttribArray(vert_loc);
+	    }
+
+    } else {
+
+    	checkGLError("before use program");
+
+        GLuint programID = shaders[0]._programID;
+
+        glUseProgram(programID);
+
+		checkGLError("before bind uniforms");
+
+	    // bind uniforms
+
+        for (int j = 0; j < scene->patterns.size(); ++j) {
             DynamicScene::PatternObject &po = scene->patterns[j];
             int uniformLocation  = glGetUniformLocation(programID, po.name.c_str());
-            if(uniformLocation >= 0) {
+            if (uniformLocation >= 0) {
                 if(po.type == 0) {
                     glUniform3f(uniformLocation, po.v.x, po.v.y, po.v.z);
                 } else if(po.type == 1) {
@@ -337,19 +375,12 @@ void Mesh::draw_faces(bool smooth) const {
             }
         }
 
-		for(int j = 0; j < uniform_strings.size(); ++j) {
+		for (int j = 0; j < uniform_strings.size(); ++j) {
 			int uniformLocation = glGetUniformLocation(programID, uniform_strings[j].c_str());
 			if(uniformLocation >= 0) {
 				glUniform1f(uniformLocation, uniform_values[j]);
 			}
 		}
-
-        //printf("useNormalMapping = %s\n", do_normal_mapping ? "true" : "false");
-        //printf("useEnvMapping    = %s\n", do_environment_mapping ? "true" : "false");
-        //printf("useTexMapping    = %s\n", do_texture_mapping ? "true" : "false");
-        
-		//printf("dir lights = %lu\n", scene->directional_lights.size());
-		//printf("pt lights  = %lu\n", scene->point_lights.size());
 
         int uniformLocation = glGetUniformLocation(programID, "useTextureMapping");
         if(uniformLocation >= 0)
@@ -368,39 +399,23 @@ void Mesh::draw_faces(bool smooth) const {
             glUniform1i(uniformLocation, use_mirror_brdf ? 1 : 0);
        	
 		uniformLocation = glGetUniformLocation(programID, "spec_exp");
-			if(uniformLocation >= 0) {
-				glUniform1f(uniformLocation, phong_spec_exp);
-			}	
-
+		if(uniformLocation >= 0)
+			glUniform1f(uniformLocation, phong_spec_exp);
+			
         uniformLocation = glGetUniformLocation(programID, "obj2world");
-        if(uniformLocation >= 0) {
+        if(uniformLocation >= 0)
             glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glObj2World);
-        }
         
         uniformLocation = glGetUniformLocation(programID, "obj2worldNorm");
-        if(uniformLocation >= 0) {
+        if(uniformLocation >= 0)
             glUniformMatrix3fv(uniformLocation, 1, GL_FALSE, glObj2WorldNorm);
-        }
-        
-        int diffuseTextureID  = glGetUniformLocation(programID, "diffuseTextureSampler");
-        if(diffuseTextureID >= 0) {
-	        glActiveTexture(GL_TEXTURE0);
-	        glBindTexture(GL_TEXTURE_2D, diffuseId);
-            glUniform1i(diffuseTextureID, 0);
-        }
 
-        int normalTextureID  = glGetUniformLocation(programID, "normalTextureSampler");
-        if(normalTextureID >= 0) {
-	        glActiveTexture(GL_TEXTURE1);
-	        glBindTexture(GL_TEXTURE_2D, normalId);
-            glUniform1i(normalTextureID, 1);
-        }
-
-        int environmentTextureID  = glGetUniformLocation(programID, "environmentTextureSampler");
-        if(environmentTextureID >= 0) {
-	        glActiveTexture(GL_TEXTURE2);
-	        glBindTexture(GL_TEXTURE_2D, environmentId);
-            glUniform1i(environmentTextureID, 2);
+        int num_shadowed_lights = scene->get_num_shadowed_lights();
+ 		for (int i=0; i<num_shadowed_lights; i++) {	
+        	string varname = "obj2shadowlight" + std::to_string(i);
+        	uniformLocation = glGetUniformLocation(programID, varname.c_str());
+        	if(uniformLocation >= 0)
+            	glUniformMatrix4fv(uniformLocation, 1, GL_FALSE, glObj2ShadowLight[i]);
         }
 
         Vector3D camPosition = scene->camera->position();
@@ -411,15 +426,50 @@ void Mesh::draw_faces(bool smooth) const {
         if (uniformLocation >=0)
         	glUniform3f( uniformLocation, v1, v2, v3 );
 
+        // bind texture samplers ///////////////////////////////////
+
+        int diffuseTextureID = glGetUniformLocation(programID, "diffuseTextureSampler");
+        if (diffuseTextureID >= 0) {
+	        glActiveTexture(GL_TEXTURE0);
+	        glBindTexture(GL_TEXTURE_2D, diffuseId);
+            glUniform1i(diffuseTextureID, 0);
+        }
+
+        int normalTextureID = glGetUniformLocation(programID, "normalTextureSampler");
+        if (normalTextureID >= 0) {
+	        glActiveTexture(GL_TEXTURE1);
+	        glBindTexture(GL_TEXTURE_2D, normalId);
+            glUniform1i(normalTextureID, 1);
+        }
+
+        int environmentTextureID = glGetUniformLocation(programID, "environmentTextureSampler");
+        if (environmentTextureID >= 0) {
+	        glActiveTexture(GL_TEXTURE2);
+	        glBindTexture(GL_TEXTURE_2D, environmentId);
+            glUniform1i(environmentTextureID, 2);
+        }
+
+        for (int i=0; i<num_shadowed_lights; i++) {
+        	string varname = "shadowTextureSampler" + std::to_string(i);
+            int shadowTextureID  = glGetUniformLocation(programID, varname.c_str());
+	        if (shadowTextureID >= 0) {
+		        glActiveTexture(GL_TEXTURE3 + i);
+		        glBindTexture(GL_TEXTURE_2D, scene->get_shadow_texture(i));
+	            glUniform1i(shadowTextureID, 3 + i);
+	        }
+    	}
+
+        // bind light parameters //////////////////////////////////
+
         uniformLocation = glGetUniformLocation( programID, "num_directional_lights" );
         if (uniformLocation >= 0)
         	glUniform1i( uniformLocation, scene->directional_lights.size() );
 
         for (int j = 0; j < scene->directional_lights.size(); ++j) {
             StaticScene::DirectionalLight *light = scene->directional_lights[j];
-            float v1 = light->dirToLight.x;
-            float v2 = light->dirToLight.y;
-            float v3 = light->dirToLight.z;		
+            float v1 = light->lightDir.x;
+            float v2 = light->lightDir.y;
+            float v3 = light->lightDir.z;		
             string str = "directional_light_vectors[" + std::to_string(j) + "]";
             uniformLocation = glGetUniformLocation( programID, str.c_str() );
             if (uniformLocation >= 0)
@@ -440,6 +490,48 @@ void Mesh::draw_faces(bool smooth) const {
             if(uniformLocation >= 0)
             	glUniform3f( uniformLocation, v1, v2, v3 );
         }
+
+        uniformLocation = glGetUniformLocation( programID, "num_spot_lights" );
+        if (uniformLocation >= 0)
+        	glUniform1i( uniformLocation, scene->spot_lights.size() );
+
+        for (int j = 0; j < scene->spot_lights.size(); ++j) {
+            StaticScene::SpotLight *light = scene->spot_lights[j];
+            float v1 = light->position.x;
+            float v2 = light->position.y;
+            float v3 = light->position.z;
+            string str = "spot_light_positions[" + std::to_string(j) + "]";
+            uniformLocation = glGetUniformLocation( programID, str.c_str() );
+            if(uniformLocation >= 0)
+            	glUniform3f( uniformLocation, v1, v2, v3 );
+
+            v1 = light->direction.x;
+            v2 = light->direction.y;
+            v3 = light->direction.z;
+            str = "spot_light_directions[" + std::to_string(j) + "]";
+            uniformLocation = glGetUniformLocation( programID, str.c_str() );
+            if(uniformLocation >= 0)
+            	glUniform3f( uniformLocation, v1, v2, v3 );
+
+            v1 = light->angle;
+            str = "spot_light_angles[" + std::to_string(j) + "]";
+            uniformLocation = glGetUniformLocation( programID, str.c_str() );
+            if(uniformLocation >= 0)
+            	glUniform1f( uniformLocation, v1);
+
+            v1 = light->radiance.r;
+            v2 = light->radiance.g;
+            v3 = light->radiance.b;
+            str = "spot_light_intensities[" + std::to_string(j) + "]";
+            uniformLocation = glGetUniformLocation( programID, str.c_str() );
+            if(uniformLocation >= 0)
+            	glUniform3f( uniformLocation, v1, v2, v3 );
+
+        }
+
+        // bind per-vertex attribute buffers  //////////////////////
+
+	    checkGLError("before bind vertex attributes");
 
 	    int vert_loc = glGetAttribLocation(programID, "vtx_position");
 	    if (vert_loc >= 0) {
@@ -475,14 +567,18 @@ void Mesh::draw_faces(bool smooth) const {
             glVertexAttribPointer(tan_loc, 3, GL_FLOAT, GL_FALSE, 0, 0);
             glEnableVertexAttribArray(tan_loc);
         }
+	}
 
-	    glDrawArrays(GL_TRIANGLES, 0, polygons.size() * 3);
+	checkGLError("before glDrawArrays");
 
-	    glBindVertexArray(0);
-        glUseProgram(0);
-	    glBindTexture(GL_TEXTURE_2D, 0);
-    }
+	glDrawArrays(GL_TRIANGLES, 0, 3 * polygons.size());
+
+	glUseProgram(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	checkGLError("end draw faces");
 }
+
 
 BBox Mesh::get_bbox() {
   BBox bbox;

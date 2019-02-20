@@ -8,9 +8,9 @@ namespace StaticScene {
 // Directional Light //
 
 DirectionalLight::DirectionalLight(const Spectrum& rad,
-                                   const Vector3D& lightDir)
+                                   const Vector3D& lightingDir)
     : radiance(rad) {
-  dirToLight = -lightDir.unit();
+  lightDir = lightingDir.unit();
 }
 
 // Infinite Hemisphere Light //
@@ -30,7 +30,13 @@ PointLight::PointLight(const Spectrum& rad, const Vector3D& pos)
 // Spot Light //
 
 SpotLight::SpotLight(const Spectrum& rad, const Vector3D& pos,
-                     const Vector3D& dir, float angle) {}
+                     const Vector3D& dir, float cone_angle)
+{
+    radiance = rad;
+    position = pos;
+    direction = dir;
+    angle = cone_angle;
+}
 
 // Area Light //
 

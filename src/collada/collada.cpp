@@ -140,11 +140,11 @@ int ColladaParser::load(const char* filename, SceneInfo* sceneInfo) {
   string filename_test(filename);
 
   if(filename_test.substr(filename_test.find_last_of(".") + 1) == "json"
-      || filename_test.substr(filename_test.find_last_of(".") + 1) == "JSON")
+  || filename_test.substr(filename_test.find_last_of(".") + 1) == "JSON")
   {
-      stat("Loading JSON file...");
+    stat("Loading scene JSON file...");
 
-      string path = filename_test.substr(0, filename_test.find_last_of("/") + 1);
+    string path = filename_test.substr(0, filename_test.find_last_of("/") + 1);
 
     stringstream buffer;
     buffer << in.rdbuf();
@@ -156,7 +156,7 @@ int ColladaParser::load(const char* filename, SceneInfo* sceneInfo) {
     }
 
     JSONObject root = value->AsObject();
-      scene = sceneInfo;
+    scene = sceneInfo;
  
     if (root.find(L"pattern") != root.end() && root[L"pattern"]->IsArray()) {
         JSONArray pattern_json_array = root[L"pattern"]->AsArray();
@@ -191,6 +191,10 @@ int ColladaParser::load(const char* filename, SceneInfo* sceneInfo) {
             node.instance = pattern;
             scene->nodes.push_back(node);
         }
+    }
+
+    if (root.find(L"base_shader_dir") != root.end() && root[L"base_shader_dir"]->IsString()) {
+      scene->base_shader_dir = path + wstring_to_string(root[L"base_shader_dir"]->AsString());
     }
 
     if (root.find(L"camera") != root.end() && root[L"camera"]->IsObject()) {
@@ -306,8 +310,8 @@ int ColladaParser::load(const char* filename, SceneInfo* sceneInfo) {
 					light->light_type = LightType::SPOT;
 				}
 			}
-			if(light_json_object.find(L"color") != light_json_object.end() && light_json_object[L"color"]->IsArray()) {
-				JSONArray color_json_array = light_json_object[L"color"]->AsArray();
+			if(light_json_object.find(L"intensity") != light_json_object.end() && light_json_object[L"intensity"]->IsArray()) {
+				JSONArray color_json_array = light_json_object[L"intensity"]->AsArray();
 				if(color_json_array.size() == 3) {
 					light->spectrum.r = (float) color_json_array[0]->AsNumber();
 					light->spectrum.g = (float) color_json_array[1]->AsNumber();
@@ -488,7 +492,7 @@ int ColladaParser::load(const char* filename, SceneInfo* sceneInfo) {
 				if(pos != string::npos) {
 					pos += 4;
 					polymesh->diffuse_filename = diffuse_filename.substr(0, pos);
-				}
+ 				}
 			}
 			if (mesh_json_object.find(L"normal_filename") != mesh_json_object.end() && mesh_json_object[L"normal_filename"]->IsString()) {
 				string normal_filename = path + wstring_to_string(mesh_json_object[L"normal_filename"]->AsString());
@@ -602,12 +606,14 @@ int ColladaParser::load(const char* filename, SceneInfo* sceneInfo) {
 					polymesh->rotation.z = rotation_json_array[2]->AsNumber();
 				}
 			}
-			if(mesh_json_object.find(L"scale") != mesh_json_object.end() && mesh_json_object[L"scale"]->IsArray()) {
+
+      Vector3D mesh_scale(1,1,1);
+			if (mesh_json_object.find(L"scale") != mesh_json_object.end() && mesh_json_object[L"scale"]->IsArray()) {
 				JSONArray scale_json_array = mesh_json_object[L"scale"]->AsArray();
 				if(scale_json_array.size() == 3) {
-					polymesh->scale.x = scale_json_array[0]->AsNumber();
-					polymesh->scale.y = scale_json_array[1]->AsNumber();
-					polymesh->scale.z = scale_json_array[2]->AsNumber();
+					mesh_scale.x = polymesh->scale.x = scale_json_array[0]->AsNumber();
+					mesh_scale.y = polymesh->scale.y = scale_json_array[1]->AsNumber();
+					mesh_scale.z = polymesh->scale.z = scale_json_array[2]->AsNumber();
 				}
 			}
 			if (mesh_json_object.find(L"texcoord_u_scale") != mesh_json_object.end() && mesh_json_object[L"texcoord_u_scale"]->IsNumber()) {
@@ -671,7 +677,7 @@ int ColladaParser::load(const char* filename, SceneInfo* sceneInfo) {
 			polymesh->type = Instance::POLYMESH;
 			node.instance = polymesh;
 			//node.transform = Matrix4x4::identity();
-      node.transform = Matrix4x4::translation(mesh_translate);
+      node.transform = Matrix4x4::translation(mesh_translate) * Matrix4x4::scaling(mesh_scale);
 			scene->nodes.push_back(node);
 		}
     }

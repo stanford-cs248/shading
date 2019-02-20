@@ -19,7 +19,7 @@ class DirectionalLight : public SceneLight {
   bool is_delta_light() const { return true; }
 
   Spectrum radiance;
-  Vector3D dirToLight;
+  Vector3D lightDir;
 
 };  // class Directional Light
 
@@ -52,7 +52,7 @@ class PointLight : public SceneLight {
 class SpotLight : public SceneLight {
  public:
   SpotLight(const Spectrum& rad, const Vector3D& pos, const Vector3D& dir,
-            float angle);
+            float cone_angle);
   bool is_delta_light() const { return true; }
 
   Spectrum radiance;
