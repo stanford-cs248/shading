@@ -148,56 +148,58 @@ You'll also be able to render a reflective teapot (`media/teapot/teapot.json`), 
 
 ![Mirror teapot](misc/teapot_mirror.png?raw=true)
 
-### Part 4: Adding Shadowed Spotlights (30 pts)
+### Part 4: Adding Spotlights and Shadows (30 pts)
 
-In the final part of this assignment you will implement a more advanced type of light source, a spotlight, as well as using shadow mapping with percentage closer filtering (PCF) to compute smooth shadows for your spotlights.  The more advanced lighting conditions will significantly improve the realism of your rendering.  When you are done with this part of the assignment, you will be able to render the scene `media/spheres/spheres_shadow.json` to get a rendering like this:
+__PLEASE PULL THE LATEST ASSIGNMENT 3 CODE FROM GITHUB AS IT IS NEEDED FOR PART 4.__
+
+In the final part of this assignment you will implement a more advanced type of light source, a spotlight, as well as use shadow mapping with percentage closer filtering (PCF) to compute smooth shadows for your spotlights.  These more advanced lighting conditions will significantly improve the realism of your rendering.  When you are done with this part of the assignment, you will be able to render the scene `media/spheres/spheres_shadow.json` to get a rendering like this:
 
 ![Nice shadowed spotlights](misc/spotlight_final.jpg?raw=true)
 
-The scene is illuminated by two [spotlights](http://cs248.stanford.edu/winter19/lecture/materials/slide_035), a red spotlight coming from the front-left, and a white spotlight coming from the front-right.  This view from above illustrates the structure of the scene.
+The scene is illuminated by two [spotlights](http://cs248.stanford.edu/winter19/lecture/materials/slide_035), a red spotlight coming from the front-left of the scene, and a white spotlight coming from the front-right.  The image below is a view from above the scene.
 
 ![View from above](misc/spotlight_above.jpg?raw=true)
 
 #### Part 4.1 Adding Spotlights (15 points) ####
 
-The first step in this part of the assignment is to add fragment shader support from rendering spotlights. You will need to modify `media/shader_shadow.frag` for this task.  Note that if you have completed Parts 1-3 of the assignment, you should drop your solutions into this file so that you can render `media/spheres/spheres_shadow.json` with correct texture mapping, normal mapping, and environment lighting.  
+The first step in this part of the assignment is to extend your fragment shader for rendering spotlights. You will need to modify `media/shader_shadow.frag` for this task.  Note that if you have completed Parts 1-3 of the assignment, you can drop your solutions from `shader.vert` and `shader.frag` into this file so that you can render `media/spheres/spheres_shadow.json` with correct texture mapping, normal mapping, and environment lighting. 
 
-1. Modify the shader to compute the illumination from a spotlight by adding code to the body of the loop over spotlights in `shader_shadow.frag`.  Details are in the starter code, but as quick summary, is that a spotlight only has non-zero illumination in directions that are within `cone_angle` of the light direction.  Note that the intensity of a spotlight falls off with a 1/D^2 factor (where D is the distance from the light source). If you implement this logic, you should see an image that looks like this.  (Shown from front and from above).
+1. Modify the `shader_shadow.frag' to compute the illumination from a spotlight by adding code to the body of the loop over spotlights.  Details about the implementation are in the starter code, but as a quick summary, a spotlight is a light that has non-zero illumination  only in directions that are within `cone_angle` of the light direction. Note that the intensity of a spotlight falls off with a 1/D^2 factor (where D is the distance from the light source). If you implement this logic, you should see an image that looks like the one below.  (Shown from front and from above).  In the image below, notice how the intensity of the spotlight falls off with distance.
 
 ![Hardspot spotlights](misc/spotlight_hard.jpg?raw=true)
 
-2. Notice that since your implementation of spotlights cuts off all illumination eyond the cone angle, the spotlights form a hard boundary.  You can soften this boundary by linearly interpolating the intensity of illumination from zero to the illumination you computed previously near the edge of the cone.  Please see details in the code, but our reference solution starts falling off at angles 90\% of the cone angle, decreasing to no illumination at 110% of the cone angle. With this smoother spotlight falloff you will see an image like this.
+2. Notice that since your implementation of spotlights cuts off all illumination beyond the cone angle, the spotlights feature a hard boundary between light and dark.  You can soften this boundary by linearly interpolating illumination intensity from near the edge of the cone.  Please see details in the code, but in our reference solution, intensity of the spotlight starts falling off once the angle to the surface point is at least 90\% of the cone angle, and drops to zero illumination at 110% of the cone angle. With this smoother spotlight falloff you will see an image like this.
 
 ![Softer spotlights](misc/spotlight_soft.jpg?raw=true)
 
 #### Part 4.2 Adding Spotlights (15 points) ####
 
-Now you will improve your spotlights so they cast shadows.  In class we discussed the [shadow mapping algorithm](http://cs248.stanford.edu/winter19/lecture/geometricqueries/slide_046) for approximating shadows in a rasterization-based rendering pipeline. Recall that shadow mapping requires to steps.
-   1. In step 1, for each light source, we render scene geometry using a camera that is positioned at the light source. The result is a depth buffer encoding the *closest point in the scene at each sample point*.  This depth buffer can be used as a single channel texture map accessed in step 2.
-   2. In step 2, when calculating illumination during rendering, the fragment shader must compute whether the current surface point being  shaded is in shadow from the perspective of the light source.  To do this, the fragment shader computes the coordinate of the current scene point *in the coordinate system* of a camera positioned at the light (in "light space"), and uses the (x,y) values of this coordinate to perform a lookup into the shadow map texture.  If the surface is not the closest scene element to the light at this point, then it is in shadow.  
+Now you will improve your spotlights so they cast shadows.  In class we discussed the [shadow mapping algorithm](http://cs248.stanford.edu/winter19/lecture/geometricqueries/slide_046) for approximating shadows in a rasterization-based rendering pipeline. Recall that shadow mapping requires two steps.
+   1. In step 1, for each light source, we render scene geometry using a camera that is positioned at the light source. The result of rendering the scene from this vantage point is a depth buffer encoding the *closest point in the scene at each sample point*.  This depth buffer will be used as a single channel texture map provided to a fragment shader in step 2.
+   2. In step 2, when calculating illumination during rendering (when shading a surface point), the fragment shader must compute whether the current surface point is in shadow from the perspective of the light source.  To do this, the fragment shader computes the coordinate of the current scene point *in the coordinate system* of a camera positioned at the light (in "light space"). It then uses the (x,y) values of this "light space" coordinate to perform a lookup into the shadow map texture.  If the surface is not the closest scene element to the light at this point, then it is in shadow.  
 
-We have implemented the first step of shadow mapping for you.  (Interested students can read through the implementaton of `Scene::render_shadow_pass()` in `src/dynamic_scene/scene.cpp`. This code rendering the scene from the perspective of a light.)  The result is that we are providing your shader with two texture maps (`shadowTextureSampler0` and `shadowTextureSampler1` in `shader_shadow.frag`) that encode depth buffer contents after rendering the scene from the two spotlight positions, and two transformation matrices (`obj2shadowlight0` and `obj2shadowlight1`) that transform object-space points into the coordinate system of the light.  Your job is to use these variables to compute shadows for the two spotlights lights. 
+We have implemented the first step of shadow mapping for you.  (Interested students can read through the implementaton of `Scene::render_shadow_pass()` in `src/dynamic_scene/scene.cpp`, however knowledge of this implementation is not necessary to do your part of the assignment. What you do need to know is that the application starter code provides your shader with two texture maps (`shadowTextureSampler0` and `shadowTextureSampler1` in `shader_shadow.frag`) that encode depth buffer contents after rendering the scene from the two respective spotlight positions, and two transformation matrices (`obj2shadowlight0` and `obj2shadowlight1`) that transform object-space points into the coordinate system of the light.  Your job is to use these variables to compute shadows for the two spotlights lights. Note, your implementation will only compute shadows for up to two spotlights, since we only give you two shadow maps.
    
 __What to do in the vertex shader:__
 
 Your work in the vertex shader is quite easy.  Just transform the triangle vertex positions into light space, storing the results in vertex shader output variables `position_shadowlight0` and `position_shadowlight1`.  We won't say much more than this, since an example of how to transform these vertex positions into world space is already in the starter code. 
 
-However, you might be wondering what is the definition of the "light space".  It's the space defined after applying a camera viewing transform where the camera is at the position of the spotlight, looking directly in the spotlight's direction, and after applying perspective projection.  We've adjusted the transform to that *after homogeneous divide* vertices that fall on screen during this shadow map rendering are in the [0,1]^2 range and valid scene depths between the near and far clipping planes are in the [0-1] range.  You can read more about the [coordinate systems of shadow mapping here](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping).
+However, you might be wondering what is the definition of the "light space"?  It is a coordinate space where the virtual camera is at the position of the spotlight, looking directly in the spotlight's direction, and after applying perspective projection.  We've adjusted the transform so that *after homogeneous divide* vertices that fall on screen during shadow map rendering are in the [0,1]^2 range and valid scene depths between the near and far clipping planes are in the [0-1] range.  You encourage you to read more about the [coordinate systems of shadow mapping here](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping).
 
 __What to do in the fragment shader:__
 
-Your work in the fragment shader is a bit more complex.  The shader receives the light space *homogenous* position of the surface `position_shadowlight0` in the case of light 0, and must use this position to determine if the surface is in shadow.  Since the position is in 3D-homogeneous coordinates, you first need to extract a non-homogeneous XY via the homogeneous divide:
+Your work in the fragment shader is a bit more complex.  The shader receives the light space *homogenous* position of the surface `position_shadowlight0` (for light 0), and must use this position to determine if the surface is in shadow from the perspective of this light.  Since the position is in 3D-homogeneous coordinates, you first need to extract a non-homogeneous XY via the homogeneous divide:
 
 ~~~~
   vec2 shadow_uv = position_shadowlight0.xy / position_shadowlight0.w;
 ~~~~
-Now you have a screen-space XY that you can use to sample the shadow map, and obtain the closest scene point at this location.  You will need to test this value against the distance of the surface to the light (how do you compute this), to determine if the surface is in shadow.
+Now you have a screen-space XY that you can use to sample the shadow map, and obtain the closest scene point at this location.  You will need to test the value returned by the texture lookup against the distance between the current surface point and the light to determine if the surface is in shadow. (How do you compute this?)
 
-At this point, you make notice errors in your image.  Read about the phenomenon of ["shadow acne"](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping) and correct any artifacts bby adding a bias term to your shadow distance comparison.  Biasing pushes the surface being tested *closer to the light* so that only surfaces a good bit closer to the light than the current surface can cast shadows on the current surface.  At this point, with a properly biased shadow test (the reference solution uses a quite large bias value of 0.05), you should get an image that look like this (shown from a top view):
+At this point, you may notice errors in your image.  Read about the phenomenon of ["shadow acne"](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping) and correct any artifacts by adding a bias term to your shadow distance comparison.  Biasing pushes the surface being tested *closer to the light* so that only surfaces a good bit closer to the light can cast shadows on the current surface.  At this point, with a properly biased shadow test (the reference solution uses a quite large bias value of 0.05), you should get an image that looks like this (shown from a top view):
 
 ![Hard shadows](misc/shadows_hard.jpg?raw=true)
 
-Ad you move the camera to look at the scene, you might observe aliasing at the edges of your shadows.  One way to approximate a smoother shadow boundary is to take multiple samples of the shadow map around a desired sample point, and then compute the fraction of samples that pass the test.  This technique, which is expensive because it requires making multiple texture lookups, is called __percentage closure filtering__.  The basic pseudocode for a 25-sample implementation of PCF is:
+As you move the camera and look at the scene from different viewpoints, you might observe aliasing (jaggies) at the edges of your shadows.  One way to approximate a smoother shadow boundary is to take multiple samples of the shadow map around a desired sample point, and then compute the fraction of samples that pass the test.  This technique, which is quite costly because it requires making multiple texture lookups (a form of supersampling), is called __percentage closure filtering__. Inuitively, by perturbing the location of the shadow map lookup, PCF is trying to determine how close to a shadow boundary the current surface point is. Points slower to the boundary are considered to be partially occluded, and the result is a smoother gradation of intensity near the shadow boundary. The basic pseudocode for a 25-sample implementation of PCF is:
 
 ~~~~
 float pcf_step_size = 256;
@@ -216,9 +218,11 @@ Notice that changing the parameter `pcf_step_size` governs how far apart your sa
 
 ![Smooth shadows](misc/shadows_soft.jpg?raw=true)
 
+You've done it!  You've now written a few key parts of a real time renderer!
+
 ### Extra Credit
 
-There are number of ways to go farther in this assignment.  Some ideas include:
+There are many ways to go farther in this assignment.  Some ideas include:
 
 * Implement other BRDFs that are interesting to you.  Google terms like "physically based shading".  
 
@@ -228,7 +232,7 @@ There are number of ways to go farther in this assignment.  Some ideas include:
 
 ## Writeup
 
-You will submit a short document explaining what you have implemented, and any particular details of your submission. If your submission includes any implementations which are not entirely functional, please detail what works and what doesn't, along with where you got stuck. This document does not need to be long; correctly implemented features may simply be listed, and incomplete features should be described in a few sentences at most.
+Please submit a short document explaining what you have implemented, and any particular details of your submission. If your submission includes any implementations which are not entirely functional, please detail what works and what doesn't, along with where you got stuck. This document does not need to be long; correctly implemented features may simply be listed, and incomplete features should be described in a few sentences at most.
 
 The writeup must be a pdf, markdown, or plaintext file. Include it in the root directory of your submission as writeup.pdf, writeup.md, or writeup.txt.
 
