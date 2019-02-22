@@ -81,7 +81,7 @@ We didn't specifically talk about the specifics of GLSL programming in class, so
 
 * The assignment starter code JIT compiles your GLSL vertex and fragment shaders on-the-fly when the `render` application starts running.  Therefore, you won't know if the code successfully compiles until run time.  If you see a black screen while rendering, it's likely because your GLSL shader failed to compile.  __Look to your console for error messages about a failed compile.__
 
-### Part 1: Implementing Phong Reflectance (20%)
+### Part 1: Implementing Phong Reflectance (20 pts)
 
 In the first part of this assignment you will implement two important aspects of defining a material.  First, you will implement a simple BRDF that implements the phong reflectance model to render a shiny surface.
 
@@ -101,13 +101,13 @@ A correct implementation of Phong reflectance should yield shaded spheres, which
 
 ![Spheres with phong](misc/step2.jpg?raw=true)
 
-### Part 2: Normal mapping (25%)
+### Part 2: Normal mapping (25 pts)
 
 Although there is a texture map on the ground plane and spheres to add detail to these surfaces, the surfaces continue to look "flat". Your next task to implement [normal mapping](http://cs248.stanford.edu/winter19/lecture/texture/slide_039) to create the illusion of a surface having more detail that what is modeled by the underlying geometry.  They idea of normal mapping is to perturb the surface's geometric normal with an offset by a vector encoded in a texture map.  An example "normal map" is shown at right in the image below.
 
 ![Tangent space figure](misc/tangent_fig.png?raw=true)
 
-Each RGB sample in the "normal map" encodes a 3D vector that is a perturbation of the geometry's actual normal at the corresponding surface point.  However, instead of encoding this offset in single coordinate space (e.g, object space or world space), the vectors in the normal map are represented in the __surface's tangent space.___ Tangent space is a coordinate frame that is relative to the surface's orientation at each point. It is defined by the surface's normal, aligned with the Z-axis [0 0 1] in tangent space, and a tangent vector to the surface, corresponding to X-axis [1 0 0].  The tangent space coordinate frame at a point on the surface is illustrated at left in the figure above.
+Each RGB sample in the "normal map" encodes a 3D vector that is a perturbation of the geometry's actual normal at the corresponding surface point.  However, instead of encoding this offset in single coordinate space (e.g, object space or world space), the vectors in the normal map are represented in the __surface's tangent space.__ Tangent space is a coordinate frame that is relative to the surface's orientation at each point. It is defined by the surface's normal, aligned with the Z-axis [0 0 1] in tangent space, and a tangent vector to the surface, corresponding to X-axis [1 0 0].  The tangent space coordinate frame at a point on the surface is illustrated at left in the figure above.
 
 Normal mapping works as follows: given a point on the surface, your shader needs to sample the normal map at the appropriate location to obtain the _tangent space normal_ at this point.  Then the shader should convert the tangent space normal to its world space representation so that the normal can be used for reflectance calculations. 
 
@@ -128,7 +128,7 @@ With a correct implementation of normal mapping the scene will look like this:
 
 ![Spheres with normal mapping](misc/step3.jpg?raw=true)
 
-### Part 3: Adding Environment Lighting (25%)
+### Part 3: Adding Environment Lighting (25 pts)
 
 So far, your shaders have used simple point and directional light sources in the scene. (Notice that in `shader.frag` the code iterated over light sources and accumulated reflectance.)  We'd now like you to implement a more complex form of light source.  This light source, called an image based environment light, described [here in lecture](http://cs248.stanford.edu/winter19/lecture/materials/slide_037) represents light incoming on the scene from an _infinitely far source, but from all directions_.  Pixel (x,y) in the texture map encodes the magnitude and color and light from the direction (phi, theta).  Phi and theta encode a direction in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
 
@@ -164,7 +164,7 @@ The scene is illuminated by two [spotlights](http://cs248.stanford.edu/winter19/
 
 The first step in this part of the assignment is to extend your fragment shader for rendering spotlights. You will need to modify `media/shader_shadow.frag` for this task.  Note that if you have completed Parts 1-3 of the assignment, you can drop your solutions from `shader.vert` and `shader.frag` into this file so that you can render `media/spheres/spheres_shadow.json` with correct texture mapping, normal mapping, and environment lighting. 
 
-1. Modify the `shader_shadow.frag' to compute the illumination from a spotlight by adding code to the body of the loop over spotlights.  Details about the implementation are in the starter code, but as a quick summary, a spotlight is a light that has non-zero illumination  only in directions that are within `cone_angle` of the light direction. Note that the intensity of a spotlight falls off with a 1/D^2 factor (where D is the distance from the light source). If you implement this logic, you should see an image that looks like the one below.  (Shown from front and from above).  In the image below, notice how the intensity of the spotlight falls off with distance.
+1. Modify the `shader_shadow.frag` to compute the illumination from a spotlight by adding code to the body of the loop over spotlights.  Details about the implementation are in the starter code, but as a quick summary, a spotlight is a light that has non-zero illumination  only in directions that are within `cone_angle` of the light direction. Note that the intensity of a spotlight falls off with a 1/D^2 factor (where D is the distance from the light source). If you implement this logic, you should see an image that looks like the one below.  (Shown from front and from above).  In the image below, notice how the intensity of the spotlight falls off with distance.
 
 ![Hardspot spotlights](misc/spotlight_hard.jpg?raw=true)
 
@@ -240,4 +240,4 @@ Failure to submit this writeup will incur a penalty on the assignment.
 
 ## Handin Instructions
 
-We are using [Canvas](https://canvas.stanford.edu) as our submission tool. You should create and upload a tar archive of your entire src subdirectory along with the writeup (e.g. writeup.txt) and scene submission (scene.json).
+We are using [Canvas](https://canvas.stanford.edu) as our submission tool. You should create and upload a tar archive of your entire `media/` subdirectory along with the writeup (e.g. writeup.txt).
