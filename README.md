@@ -240,4 +240,4 @@ Failure to submit this writeup will incur a penalty on the assignment.
 
 ## Handin Instructions
 
-We are using [Canvas](https://canvas.stanford.edu) as our submission tool. You should create and upload a tar archive of your entire `media/` subdirectory along with the writeup (e.g. writeup.txt).
+We are using [Canvas](https://canvas.stanford.edu) as our submission tool. You should create and upload a zip archive of your entire `media/` subdirectory along with the writeup (e.g. writeup.txt).
