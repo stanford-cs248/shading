@@ -13,33 +13,20 @@
 
 #include "../camera.h"
 #include "../shader.h"
+#include "../gl_resource_manager.h"
 
 #include "../static_scene/scene.h"
 #include "../static_scene/light.h"
 
-#define SCENE_MAX_SHADOWED_LIGHTS 2
-
-typedef std::vector<std::string> Info;
+#define SCENE_MAX_SHADOWED_LIGHTS 10
 
 namespace CS248 {
 
-void checkGLError(string str);
-    
 namespace DynamicScene {
 
 // Forward declarations
 class Scene;
-class Selection;
-class XFormWidget;
 
-class PatternObject {
-public:
-    std::string name;
-    std::string display_name;
-    Vector3D v;
-    float s;
-    int type;
-};
 
 /**
  * Interface that all physical objects in the scene conform to.
@@ -49,206 +36,186 @@ public:
  */
 class SceneObject {
  public:
-  SceneObject()
-      : scene(NULL), isVisible(true), isPickable(true) {}
+    SceneObject()
+        : scene_(NULL) {}
 
-  /**
-   * Renders the object in OpenGL, assuming that the camera and projection
-   * matrices have already been set up.
-   */
-  virtual void draw() = 0;
-  virtual void draw_shadow() {};  // don't require draw_shadow()
+    /**
+     * Renders the object in OpenGL, assuming that the camera and projection
+     * matrices have already been set up.
+     */
+    virtual void draw(const Matrix4x4& worldToNDC) const = 0;
 
-  virtual void draw_pretty() { draw(); }
+    // same as above, but shadow pass form
+    virtual void drawShadow(const Matrix4x4& worldToNDC) const = 0;
 
-  /**
-   * Given a transformation matrix from local to space to world space, returns
-   * a bounding box of the object in world space. Note that this doesn't have
-   * to be the smallest possible bbox, in case that's difficult to compute.
-   */
-  virtual BBox get_bbox() = 0;
-  
-  /**
-   * Converts this object to an immutable, raytracer-friendly form. Passes in a
-   * local-space-to-world-space transformation matrix, because the raytracer
-   * expects all the objects to be
-   */
-  virtual StaticScene::SceneObject *get_static_object() = 0;
-  /**
-   * Does the same thing as get_static_object, but applies the object's
-   * transformations first.
-   */
-  virtual StaticScene::SceneObject *get_transformed_static_object(double t) {
-    return get_static_object();
-  }
-  
-  virtual Matrix4x4 getTransformation();
+    // reload any shaders associated with object
+    virtual void reloadShaders() = 0; 
 
-  virtual Matrix4x4 getRotation();
+    /**
+     * Returns a world space bounding box of the object in world space.
+     */
+    virtual BBox getBBox() const = 0;
 
-  /**
-   * Pointer to the parent scene containing this object.
-   */
-  Scene *scene;
+//  Matrix4x4 getTransformation() const;
+//  Matrix4x4 getRotation() const;
+//  Matrix4x4 getScale() const;
+    Matrix4x4 getObjectToWorld() const {
+   
+        float deg2Rad = M_PI / 180.0;
+    
+        Matrix4x4 T = Matrix4x4::translation(position_);
+        Matrix4x4 RX = Matrix4x4::rotation(rotation_.x * deg2Rad, Matrix4x4::Axis::X);
+        Matrix4x4 RY = Matrix4x4::rotation(rotation_.y * deg2Rad, Matrix4x4::Axis::Y);
+        Matrix4x4 RZ = Matrix4x4::rotation(rotation_.z * deg2Rad, Matrix4x4::Axis::Z);
+        Matrix4x4 scaleXform = Matrix4x4::scaling(scale_);
+    
+        // object to world transformation
+        Matrix4x4 objectToWorld = T * RX * RY * RZ * scaleXform;
+        return objectToWorld;
+    }
 
-  /* World-space position, rotation, scale */
-  Vector3D position;
-  Vector3D rotation;
-  Vector3D scale;
+    Matrix3x3 getObjectToWorldForNormals() const {
+   
+        float deg2Rad = M_PI / 180.0;
+    
+        Matrix4x4 RX = Matrix4x4::rotation(rotation_.x * deg2Rad, Matrix4x4::Axis::X);
+        Matrix4x4 RY = Matrix4x4::rotation(rotation_.y * deg2Rad, Matrix4x4::Axis::Y);
+        Matrix4x4 RZ = Matrix4x4::rotation(rotation_.z * deg2Rad, Matrix4x4::Axis::Z);
+        Matrix4x4 scaleXform = Matrix4x4::scaling(scale_);
+    
 
-  /**
-   * Is this object drawn in the scene?
-   */
-  bool isVisible;
+        Matrix4x4 xformNorm = RX * RY * RZ * scaleXform;
 
-  /**
-   * Is this object pickable right now?
-   */
-  bool isPickable;
-};
+        // convert to 3x3
+        Matrix3x3 xform3D;
+        for (int i=0; i<3; i++) {
+            const Vector4D& col = xformNorm.column(i); 
+            xform3D[i][0] = col[0];
+            xform3D[i][1] = col[1];
+            xform3D[i][2] = col[2];
+        }
 
-// A Selection stores information about any object or widget that is
-// selected in the scene, which could include a mesh, a light, a
-// camera, or any piece of an object, such as a vertex in a mesh or
-// a rotation handle on a camera.
-class Selection {
- public:
-  // Types used for scene elements that have well-
-  // defined axes (e.g., transformation widgets)
-  enum class Axis { X, Y, Z, Center, None };
+        return xform3D.inv().T(); 
+    }
 
-  Selection() { clear(); }
+    void setScene(Scene* s) { scene_ = s; }
 
-  void clear() {
-    object = nullptr;
-    coordinates = Vector3D(0., 0., 0.);
-    axis = Axis::None;
-  }
 
-  bool operator==(const Selection &s) const {
-    return object == s.object && axis == s.axis &&
-           coordinates.x == s.coordinates.x &&
-           coordinates.y == s.coordinates.y && coordinates.z == s.coordinates.z;
-  }
+  protected:
 
-  bool operator!=(const Selection &s) const { return !(*this == s); }
+    /**
+     * Pointer to the scene containing this object.
+     */
+    Scene* scene_;
 
-  SceneObject *object;       // the selected object
-  Vector3D coordinates;      // for optionally selecting a single point
-  Axis axis;                 // for optionally selecting an axis
+    /* World-space position, rotation, scale of object */
+    Vector3D position_;
+    Vector3D rotation_;
+    Vector3D scale_;
 };
 
 /**
- * A light.
+ * A light
  */
 class SceneLight {
  public:
-  virtual StaticScene::SceneLight *get_static_light() const = 0;
+    virtual StaticScene::SceneLight* getStaticLight() const = 0;
 };
 
 /**
- * The scene that meshEdit generates and works with.
+ * The scene
  */
 class Scene {
  public:
-  Scene(std::vector<SceneObject *> _objects, std::vector<SceneLight *> _lights, const std::string& base_shader_dir);
-  ~Scene();
+    Scene(std::vector<SceneObject*> objects,
+          std::vector<SceneLight*> lights,
+          const std::string& baseShaderDir);
+    ~Scene();
 
-  static Scene deep_copy(Scene s);
-  void apply_transforms(double t);
+    /**
+     * Renders the scene in OpenGL, assuming the camera and projection
+     * transformations have been applied elsewhere.
+     */
+    void render();
 
-  /**
-   * Attempts to add object o to the scene, returning
-   * false if it is already in the scene.
-   */
-  bool addObject(SceneObject *o);
+    // renders a shadow pass
+    void renderShadowPass(int shadowedLightIndex);
 
-  /**
-   * Attempts to remove object o from the scene, returning
-   * false if it is not already in the scene.
-   */
-  bool removeObject(SceneObject *o);
+    // visualization mode
+    void visualizeShadowMap();
 
-  /**
-   * Renders the scene in OpenGL, assuming the camera and projection
-   * transformations have been applied elsewhere.
-   */
-  void render_in_opengl();
+    // disco mode
+    void rotateSpotLights();
+      
+    // true if shadow pass is necessary
+    bool needsShadowPass() const { return doShadowPass_; }
 
-  // renders a shadow pass
-  void render_shadow_pass();
+    // "hot" reloads shaders for all scene objects
+    void reloadShaders();
 
-  // visualization mode
-  void visualize_shadow_map();
-    
-  // true if shadow pass is necessary
-  bool requires_shadow_pass() const { return do_shadow_pass; }
+    /**
+     * Gets a bounding box for the entire scene in world space coordinates.
+     * May not be the tightest possible.
+     */
+    BBox getBBox() const;
 
-  /**
-   * Gets a bounding box for the entire scene in world space coordinates.
-   * May not be the tightest possible.
-   */
-  BBox get_bbox();
+    Shader*   getShadowShader() const { return shadowShader_; }
+    TextureArrayId getShadowTextureArrayId() const { return shadowDepthTextureArrayId_; }
+    Matrix4x4 getWorldToShadowLight(int lightid) const { return worldToShadowLight_[lightid]; }
 
-  int current_pattern_id;
-  int current_pattern_subid;
-  double scaling_factor;
+    size_t getNumShadowedLights() const;
+    size_t getNumDirectionalLights() const { return directionalLights_.size(); }
+    size_t getNumPointLights() const { return pointLights_.size(); }
+    size_t getNumSpotLights() const { return spotLights_.size(); }
 
-  void prevPattern();
-  void nextPattern();
-  void decreaseCurrentPattern(double scale = 1);
-  void increaseCurrentPattern(double scale = 1);
+    const Camera* getCamera() const { return camera_; }
+    const StaticScene::DirectionalLight* getDirectionalLight(int i) const { return directionalLights_[i]; }
+    const StaticScene::PointLight*       getPointLight(int i) const { return pointLights_[i]; }
+    const StaticScene::SpotLight*        getSpotLight(int i) const { return spotLights_[i]; }
 
-  Shader*   get_shadow_shader() { return shadow_shader; }
-  GLuint    get_shadow_texture(int lightid) { return shadow_texture[lightid]; }
-  Matrix4x4 get_world_to_shadowlight(int lightid) { return world_to_shadowlight[lightid]; }
-  int       get_num_shadowed_lights() const;
+    void setCamera(Camera* cam) { camera_ = cam; }
 
-  /**
-   * Builds a static scene that's equivalent to the current scene and is easier
-   * to use in raytracing, but doesn't allow modifications.
-   */
-  StaticScene::Scene *get_static_scene();
-  /**
-   * Does the same thing as get_static_scene, but applies all objects'
-   * transformations.
-   */
-  StaticScene::Scene *get_transformed_static_scene(double t);
-  
-  std::set<SceneObject *> objects;
-  std::set<SceneLight *> lights;
-  std::vector<PatternObject> patterns;
-  std::vector<StaticScene::DirectionalLight *> directional_lights;
-  std::vector<StaticScene::InfiniteHemisphereLight *> hemi_lights;
-  std::vector<StaticScene::PointLight *> point_lights;
-  std::vector<StaticScene::SpotLight *> spot_lights;
-  std::vector<StaticScene::AreaLight *> area_lights;
-  std::vector<StaticScene::SphereLight *> sphere_lights;
+  private:
 
-  Camera *camera;
+    Camera* camera_;
 
-  bool     do_shadow_pass;
-  int      shadow_texture_size;
-  Shader*  shadow_shader;
-  Shader*  shadow_shader2;
-  Shader*  shadow_viz_shader;
-  GLuint   shadow_framebuffer[SCENE_MAX_SHADOWED_LIGHTS];
-  GLuint   shadow_texture[SCENE_MAX_SHADOWED_LIGHTS];  
-  GLuint   shadow_color_texture[SCENE_MAX_SHADOWED_LIGHTS];
-  Matrix4x4 world_to_shadowlight[SCENE_MAX_SHADOWED_LIGHTS];
-    
+    std::set<SceneObject*> objects_;
+    std::set<SceneLight*> lights_;
+    std::vector<StaticScene::DirectionalLight*> directionalLights_;
+    std::vector<StaticScene::PointLight*> pointLights_;
+    std::vector<StaticScene::SpotLight*> spotLights_;
+    std::vector<float> spotLightRotationSpeeds_;
+    float           spotLightRotationSpeedRange_ = 0.1;
+    //std::vector<StaticScene::InfiniteHemisphereLight*> hemi_lights;
+    //std::vector<StaticScene::AreaLight*> area_lights;
+    //std::vector<StaticScene::SphereLight*> sphere_lights;
+    GLResourceManager* gl_mgr_;
+    // resources for shadow mapping
+    bool            doShadowPass_;
+    int             shadowTextureSize_;
+    Shader*         shadowShader_;
+    Shader*         shadowVizShader_;
+    FrameBufferId   shadowFrameBufferId_[SCENE_MAX_SHADOWED_LIGHTS];
+    Matrix4x4       worldToShadowLight_[SCENE_MAX_SHADOWED_LIGHTS];
+    TextureArrayId  shadowDepthTextureArrayId_;
+    TextureArrayId  shadowColorTextureArrayId_;
+    // OpenGL vertex array object
+    VertexArrayId   shadowVizVertexArrayId_;
+    // OpenGL vertex buffer objects
+    VertexBufferId  shadowVizVtxBufferId_;
+    VertexBufferId  shadowVizTexCoordBufferId_;
 };
 
 // Mapping between integer and 8-bit RGB values (used for picking)
 static inline void IndexToRGB(int i, unsigned char &R, unsigned char &G, unsigned char &B) {
-  R = (i & 0x000000FF) >> 0;
-  G = (i & 0x0000FF00) >> 8;
-  B = (i & 0x00FF0000) >> 16;
+    R = (i & 0x000000FF) >> 0;
+    G = (i & 0x0000FF00) >> 8;
+    B = (i & 0x00FF0000) >> 16;
 }
 
 // Mapping between 8-bit RGB values and integer (used for picking)
 static inline int RGBToIndex(unsigned char R, unsigned char G, unsigned char B) {
-  return R + G * 256 + 256 * 256 * B;
+    return R + G * 256 + 256 * 256 * B;
 }
 
 }  // namespace DynamicScene

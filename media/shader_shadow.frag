@@ -13,11 +13,6 @@ uniform bool useMirrorBRDF;         // true if mirror brdf should be used (defau
 //
 
 uniform sampler2D diffuseTextureSampler;
-uniform sampler2D normalTextureSampler;
-uniform sampler2D environmentTextureSampler;
-
-uniform sampler2D shadowTextureSampler0;
-uniform sampler2D shadowTextureSampler1;
 
 
 //
@@ -48,15 +43,14 @@ uniform float spec_exp;
 
 // values that are varying per fragment (computed by the vertex shader)
 
-varying vec3 position;     // surface position
-varying vec3 normal;       // surface normal
-varying vec2 texcoord;     // surface texcoord (uv)
-varying vec3 dir2camera;   // vector from surface point to camera
-varying mat3 tan2world;    // tangent space to world space transform
-varying vec3 vertex_diffuse_color; // surface color
+in vec3 position;     // surface position
+in vec3 normal;
+in vec2 texcoord;     // surface texcoord (uv)
+in vec3 dir2camera;   // vector from surface point to camera
+in mat3 tan2world;    // tangent space to world space transform
+in vec3 vertex_diffuse_color; // surface color
 
-varying vec4 position_shadowlight0; // surface position in light space
-varying vec4 position_shadowlight1; // surface position in light space
+out vec4 fragColor;
 
 #define PI 3.14159265358979323846
 
@@ -81,11 +75,10 @@ vec3 Diffuse_BRDF(vec3 L, vec3 N, vec3 diffuseColor) {
 //
 vec3 Phong_BRDF(vec3 L, vec3 V, vec3 N, vec3 diffuse_color, vec3 specular_color, float specular_exponent)
 {
-
-    //
-    // TODO CS248: PART 1: implement diffuse and specular terms of the Phong
+    // TODO CS248: Phong Reflectance
+    // Implement diffuse and specular terms of the Phong
     // reflectance model here.
-    // 
+
     return diffuse_color;
 }
 
@@ -96,27 +89,23 @@ vec3 Phong_BRDF(vec3 L, vec3 V, vec3 N, vec3 diffuse_color, vec3 specular_color,
 // 
 vec3 SampleEnvironmentMap(vec3 D)
 {    
+    // TODO CS248 Environment Mapping
+    // sample environment map in direction D.  This requires
+    // converting D into spherical coordinates where Y is the polar direction
+    // (warning: in our scene, theta is angle with Y axis, which differs from
+    // typical convention in physics)
+    //
+    // Tips:
+    //
+    // (1) See GLSL documentation of acos(x) and atan(x, y)
+    //
+    // (2) atan() returns an angle in the range -PI to PI, so you'll have to
+    //     convert negative values to the range 0 - 2PI
+    //
+    // (3) How do you convert theta and phi to normalized texture
+    //     coordinates in the domain [0,1]^2?
 
-     //
-     // TODO CS248 PART 3: sample environment map in direction D.  This requires
-     // converting D into spherical coordinates where Y is the polar direction
-     // (warning: in our scene, theta is angle with Y axis, which differs from
-     // typical convention in physics)
-     //
-
-     // Tips:
-     //
-     // (1) See GLSL documentation of acos(x) and atan(x, y)
-     //
-     // (2) atan() returns an angle in the range -PI to PI, so you'll have to
-     //     convert negative values to the range 0 - 2PI
-     //
-     // (3) How do you convert theta and phi to normalized texture
-     //     coordinates in the domain [0,1]^2?
-
-     return vec3(.25, .25, .25);
-
-
+    return vec3(.25, .25, .25);   
 }
 
 //
@@ -134,20 +123,16 @@ void main(void)
     float specularExponent = spec_exp;
 
     if (useTextureMapping) {
-        diffuseColor = texture2D(diffuseTextureSampler, texcoord).rgb;
+        diffuseColor = texture(diffuseTextureSampler, texcoord).rgb;
     } else {
         diffuseColor = vertex_diffuse_color;
     }
 
-    /////////////////////////////////////////////////////////////////////////
-    // Evaluate lighting and surface BRDF 
-    /////////////////////////////////////////////////////////////////////////
-
     // perform normal map lookup if required
     vec3 N = vec3(0);
     if (useNormalMapping) {
-
-       // TODO: CS248 PART 2: use tan2World in the normal map to compute the
+       // TODO: CS248 Normal Mapping:
+       // use tan2World in the normal map to compute the
        // world space normal baaed on the normal map.
 
        // Note that values from the texture should be scaled by 2 and biased
@@ -164,21 +149,27 @@ void main(void)
     }
 
     vec3 V = normalize(dir2camera);
-    // initialize "L out" with reflectance due to ambient lighting
-    vec3 Lo = vec3(0.2 * diffuseColor);   
+    vec3 Lo = vec3(0.1 * diffuseColor);   // this is ambient
+
+    /////////////////////////////////////////////////////////////////////////
+    // Phase 2: Evaluate lighting and surface BRDF 
+    /////////////////////////////////////////////////////////////////////////
 
     if (useMirrorBRDF) {
         //
-        // TODO: CS248 PART 3: compute perfect mirror reflection direction here.
+        // TODO: CS248 Environment Mapping:
+        // compute perfect mirror reflection direction here.
         // You'll also need to implement environment map sampling in SampleEnvironmentMap()
         //
         vec3 R = normalize(vec3(1.0));
+
+
         // sample environment map
         vec3 envColor = SampleEnvironmentMap(R);
         
         // this is a perfect mirror material, so we'll just return the light incident
         // from the reflection direction
-        gl_FragColor = vec4(envColor, 1);
+        fragColor = vec4(envColor, 1);
         return;
     }
 
@@ -214,8 +205,7 @@ void main(void)
         vec3 dir_to_surface = position - light_pos;
         float angle = acos(dot(normalize(dir_to_surface), spot_light_directions[i])) * 180.0 / PI;
 
-        //
-        // CS248 TODO: Part 4: compute the attenuation of the spotlight due to two factors:
+        // CS248 TODO Spotlight Attenuation: compute the attenuation of the spotlight due to two factors:
         // (1) distance from the spot light (D^2 falloff)
         // (2) attentuation due to being outside the spotlight's cone 
         //
@@ -242,14 +232,10 @@ void main(void)
         // CS248: remove this once you perform proper attenuation computations
         intensity = vec3(0.5, 0.5, 0.5);
 
-        if (i<2) {
 
-           if (i == 0) {
-              // CS248 TODO: Part 4: comute shadowing for spotlight 0 here 
-           } else if (i == 1) {
-              // CS248 TODO: Part 4: comute shadowing for spotlight 1 here 
-           }
-        }
+        // Render Shadows for all spot lights
+        // CS248 TODO: Shadow Mapping: comute shadowing for spotlight i here 
+
 
 	    vec3 L = normalize(-spot_light_directions[i]);
 		vec3 brdf_color = Phong_BRDF(L, V, N, diffuseColor, specularColor, specularExponent);
@@ -257,7 +243,7 @@ void main(void)
 	    Lo += intensity * brdf_color;
     }
 
-    gl_FragColor = vec4(Lo, 1);
+    fragColor = vec4(Lo, 1);
 }
 
 

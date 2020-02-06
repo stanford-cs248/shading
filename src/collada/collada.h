@@ -78,6 +78,7 @@ class ColladaParser {
 /*
   Stores a dynamic scene in a COLLADA file.
 */
+/*
 class ColladaWriter {
  public:
   static bool writeScene(DynamicScene::Scene& scene, const char* filename);
@@ -87,6 +88,7 @@ class ColladaWriter {
   static void writeMesh(std::ofstream& out, DynamicScene::Mesh* mesh, int id);
   static void writeVisualScenes(std::ofstream& out, DynamicScene::Scene& scene);
 };
+*/
 
 }  // namespace Collada
 }  // namespace CS248

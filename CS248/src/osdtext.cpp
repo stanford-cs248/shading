@@ -26,14 +26,14 @@ OSDText::OSDText() {
   ft   = new FT_Library;
   face = new FT_Face;
 
-  lines = vector<OSDLine>(); next_id = 0;
+  next_id = 0;
 }
 
 OSDText::~OSDText() {
 
   delete ft;
-  delete font;
   delete face;
+  delete [] font;
 
   lines.clear();
 
@@ -42,44 +42,44 @@ OSDText::~OSDText() {
 
 int OSDText::init(bool use_hdpi) {
 
-  this->use_hdpi = use_hdpi;
+    this->use_hdpi = use_hdpi;
 
-  // initialize font library
-  if(FT_Init_FreeType(ft)) {
-    out_err("Cannot init freetype library");
-    return -1;
-  }
+    // initialize font library
+    if (FT_Init_FreeType(ft)) {
+      out_err("Cannot init freetype library");
+      return -1;
+    }
 
-  // decode font and keep in memory
-  string encoded = osdfont_base64_1 + osdfont_base64_2 + osdfont_base64_3 
-                    + osdfont_base64_4 + osdfont_base64_5 + osdfont_base64_6;
-  string decoded = base64_decode(encoded);
-  size_t size = decoded.size();
-  font = new char[size];
-  memcpy(font, decoded.c_str(), size);
+    // decode font and keep in memory
+    string encoded = osdfont_base64_1 + osdfont_base64_2 + osdfont_base64_3 
+                      + osdfont_base64_4 + osdfont_base64_5 + osdfont_base64_6;
+    string decoded = base64_decode(encoded);
+    size_t size = decoded.size();
+    font = new char[size];
+    memcpy(font, decoded.c_str(), size);
 
-  // initialize font face
-  if(FT_New_Memory_Face(*ft, (const FT_Byte*) font, size, 0, face)) {
-    cerr << font;
-    out_err("Cannot open font");
-    return -1;
-  }
+    // initialize font face
+    if (FT_New_Memory_Face(*ft, (const FT_Byte*) font, size, 0, face)) {
+        cerr << font;
+        out_err("Cannot open font");
+        return -1;
+    }
 
-  // compile shaders
-  program = compile_shaders();
-  if(program) {
-      attribute_coord = get_attribu ( program, "coord" );
-      uniform_tex     = get_uniform ( program, "tex"   );
-      uniform_color   = get_uniform ( program, "color" );
-      if (attribute_coord == -1 || uniform_tex == -1 || uniform_color == -1) {
-          return -1;
-      }
-  } else return -1;
+    // compile shaders
+    program = compile_shaders();
+    if (program) {
+        attribute_coord = get_attribu ( program, "coord" );
+        uniform_tex     = get_uniform ( program, "tex"   );
+        uniform_color   = get_uniform ( program, "color" );
+        if (attribute_coord == -1 || uniform_tex == -1 || uniform_color == -1) {
+            return -1;
+        }
+    } else return -1;
 
-  // create the vbo
-  glGenBuffers(1, &vbo);
+    // create the vbo
+    glGenBuffers(1, &vbo);
 
-  return 0;
+    return 0;
 }
 
 void OSDText::render() {
@@ -127,7 +127,6 @@ int OSDText::add_line(float x, float y, string text,
 
   // add line
   lines.push_back(new_line);
-
   return new_line.id;
 }
 
@@ -188,7 +187,6 @@ void OSDText::set_color(int line_id, Color color) {
 }
 
 void OSDText::draw_line(OSDLine line) {
-
   // set font size
   FT_Set_Pixel_Sizes(*face, 0, line.size);
 
@@ -231,8 +229,8 @@ void OSDText::draw_line(OSDLine line) {
 
     // Upload the glyph bitmap as an alpha texture
     glTexImage2D(GL_TEXTURE_2D,
-                 0, GL_ALPHA, g->bitmap.width, g->bitmap.rows,
-                 0, GL_ALPHA, GL_UNSIGNED_BYTE, g->bitmap.buffer);
+                 0, GL_RED, g->bitmap.width, g->bitmap.rows,
+                 0, GL_RED, GL_UNSIGNED_BYTE, g->bitmap.buffer);
 
     // calculate the vertex and texture coordinates
     float x2 =  line.x + g->bitmap_left * sx;
@@ -258,7 +256,6 @@ void OSDText::draw_line(OSDLine line) {
 
   glDisableVertexAttribArray(attribute_coord);
   glDeleteTextures(1, &tex);
-
 }
 
 GLuint OSDText::compile_shaders() {
@@ -267,21 +264,26 @@ GLuint OSDText::compile_shaders() {
   GLuint vert_shader = glCreateShader(GL_VERTEX_SHADER);
   GLuint frag_shader = glCreateShader(GL_FRAGMENT_SHADER);
 
-  const char *vert_shader_src = "#version 120"
-  "\nattribute vec4 coord;"
-  "\nvarying vec2 texpos;"
+#ifdef __APPLE__
+  std::string version = "#version 150\n";
+#else
+  std::string version = "#version 130\n";
+#endif
+
+  std::string vert_shader_src = version + std::string("in vec4 coord;"
+  "\nout vec2 texpos;"
   "\nvoid main(void) {"
   "\n  gl_Position = vec4(coord.xy, 0, 1);"
   "\n  texpos = coord.zw;"
-  "\n}";
+  "\n}");
 
-  const char *frag_shader_src = "#version 120"
-  "\nvarying vec2 texpos;"
-  "\nuniform sampler2D tex;"
+  std::string frag_shader_src = version + std::string("uniform sampler2D tex;"
   "\nuniform vec4 color;"
+  "\nin vec2 texpos;"
+  "\nout vec4 fragColor;"
   "\nvoid main(void) {"
-  "\n  gl_FragColor = vec4(1, 1, 1, texture2D(tex, texpos).a) * color;"
-  "\n}";
+  "\n  fragColor = vec4(1, 1, 1, texture(tex, texpos).r) * color;"
+  "\n}");
 
 // with drop shadow
 //  "\nvarying vec2 texpos;"
@@ -313,7 +315,8 @@ GLuint OSDText::compile_shaders() {
   int info_length;
 
   // compile Vertex Shader
-  glShaderSource(vert_shader, 1, &vert_shader_src, NULL);
+  const char* src = vert_shader_src.c_str();
+  glShaderSource(vert_shader, 1, &src, NULL);
   glCompileShader(vert_shader);
 
   // check Vertex Shader
@@ -326,7 +329,8 @@ GLuint OSDText::compile_shaders() {
   }
 
   // compile Fragment Shader
-  glShaderSource(frag_shader, 1, &frag_shader_src, NULL);
+  src = frag_shader_src.c_str();
+  glShaderSource(frag_shader, 1, &src, NULL);
   glCompileShader(frag_shader);
 
   // check Fragment Shader
@@ -339,26 +343,45 @@ GLuint OSDText::compile_shaders() {
   }
 
   // link the program
-  GLuint program = glCreateProgram();
-  glAttachShader(program, vert_shader);
-  glAttachShader(program, frag_shader);
-  glLinkProgram(program);
+  GLuint program_id = glCreateProgram();
+  glAttachShader(program_id, vert_shader);
+  glAttachShader(program_id, frag_shader);
+  glLinkProgram(program_id);
 
   // check the program
-  glGetProgramiv(program, GL_LINK_STATUS, &result);
-  glGetProgramiv(program, GL_INFO_LOG_LENGTH, &info_length);
+  glGetProgramiv(program_id, GL_LINK_STATUS, &result);
+  glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &info_length);
   if ( info_length > 0 ){
     vector<char> program_errmsg(info_length+1);
-    glGetProgramInfoLog(program, info_length, NULL, &program_errmsg[0]);
+    glGetProgramInfoLog(program_id, info_length, NULL, &program_errmsg[0]);
     printf("%s\n", &program_errmsg[0]);
   }
 
-  glDetachShader(1, vert_shader);
-  glDetachShader(1, frag_shader);
-  glDeleteShader(vert_shader);
-  glDeleteShader(frag_shader);
+  if (!result) {
+    // get the length of the error message
+    GLint errorMessageLength;
+    glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &errorMessageLength);
 
-  return program;
+    // get the error message itself
+    char* errorMessage = new char[errorMessageLength];
+    glGetProgramInfoLog(program_id, errorMessageLength, &errorMessageLength, errorMessage);
+
+    // print it
+    printf("GLSL Linker Error:\n");
+    printf("================================================================================\n");
+    printf("%s\n", errorMessage);
+    printf("\n");
+
+    delete [] errorMessage;
+  }
+
+
+  // glDetachShader(1, vert_shader);
+  // glDetachShader(1, frag_shader);
+  // glDeleteShader(vert_shader);
+  // glDeleteShader(frag_shader);
+
+  return program_id;
 }
 
 GLint OSDText::get_attribu(GLuint program, const char *name) {

@@ -1,13 +1,18 @@
 #ifndef CS248_SHADER_H
 #define CS248_SHADER_H
 
-#include "static_scene/scene.h"
-using CS248::StaticScene::Scene;
+#include <map>
+
+#include "CS248/matrix3x3.h"
+#include "CS248/matrix4x4.h"
+#include "CS248/vector3D.h"
+#include "CS248/vector4D.h"
 
 #include "GL/glew.h"
 
-namespace CS248 {
+#include "gl_resource_manager.h"
 
+namespace CS248 {
 
 /**
  * A shader
@@ -15,46 +20,60 @@ namespace CS248 {
 class Shader {
  public:
 
-  /**
-   * Default constructor.
-   * Creates a new pathtracer instance.
-   */
-  Shader(std::string vertex_shader_filename, std::string fragment_shader_filename, std::string vertex_shader_content_prefix = "", std::string fragment_shader_content_prefix = "");
+    // Constructor
+    Shader();
 
-  /**
-   * Destructor.
-   * Frees all the internal resources used by the pathtracer.
-   */
-  ~Shader();
+    // Constructor: loads and compiles the specified vertex and fragment shaders 
+    Shader(std::string vertex_shader_filename, std::string fragment_shader_filename);
 
-  bool read(std::string filename, std::string& contents);
-  bool compileAndAttachShader( GLuint& shaderID, GLenum shaderType, const char* shaderTypeStr, std::string filename, std::string &contents, std::string prefix = "" );
-  bool link();
+    // Destructor
+    ~Shader();
 
-    // contents/filenames for the shaders
-    std::string _vertexShaderFilename;
-    std::string _vertexShaderString;
+    // reload the shaders and recompile
+    void reload();
 
-    std::string _geometryShaderFilename;
-    std::string _geometryShaderString;
+    // bind the shader to the graphics pipeline (this shader will be used for subsequent draw calls until the returned cleanup goes out of scope)
+    std::unique_ptr<Cleanup> bind();
 
-    std::string _fragmentShaderFilename;
-    std::string _fragmentShaderString;
+    // the following are all for setting shading parameters
+    bool setScalarParameter(const std::string& paramName, int value);
+    bool setScalarParameter(const std::string& paramName, float value);
+    bool setVectorParameter(const std::string& paramName, const Vector3D& value);
+    bool setVectorParameter(const std::string& paramName, const Vector4D& value);
+    bool setMatrixParameter(const std::string& paramName, const Matrix3x3& value);
+    bool setMatrixParameter(const std::string& paramName, const Matrix4x4& value);
+    bool setVertexBuffer(const std::string& paramName, int fieldsPerAttribute, VertexBufferId vertexBufferId);
+    bool setTextureSampler(const std::string& paramName, TextureId textureId);
+    bool setTextureArraySampler(const std::string& paramName, TextureArrayId textureArrayId);
 
-    // IDs of the different objects
-    GLuint _vertexShaderID;
-    GLuint _geometryShaderID;
-    GLuint _fragmentShaderID;
-    GLuint _programID;
+  private:
 
-    // where we keep track of the textures and where they are bound
-    int _firstAvailableTextureUnit;
-    //std::vector<BoundTexture> _boundTextures;
+    void init();
+    void cleanup();
+    bool createFullProgram();
+    bool linkProgram();
+    bool createVertexShader(const std::string& filename);
+    bool createFragmentShader(const std::string& filename);
+    bool prepareSourceCode(const std::string& filename, std::string* out_source);
+    int getTextureUnitForParam(const std::string& name);
 
-    // whether to actually print any GLSL errors that occur
-    bool _printErrors;
+    GLResourceManager* gl_mgr_ = nullptr;
+
+    // source filenames
+    std::string vertexShaderFilename_;
+    std::string fragmentShaderFilename_;
+
+    // IDs of the different Open GL objects associated with this shader program
+    ShaderId vertexShaderId_;
+    ShaderId fragmentShaderId_;
+    ProgramId programId_;
+
+    std::map<std::string, int> paramNameToTextureUnit_;
+
+    bool abort_if_error_during_init_ = true;
 };
 
 }  // namespace CS248
+
 
 #endif  // CS248_SHADER_H

@@ -66,7 +66,6 @@ class Renderer {
    * returned value in the renderer section of its on-screen display.
    */
   virtual std::string info( void ) = 0;
-  virtual std::string pattern_info( void ) = 0;
 
   /**
    * Respond to cursor events.
@@ -132,7 +131,7 @@ class Renderer {
    * Internal -
    * The viewer will tell the renderer if the screen is in HDPI mode.
    */
-  void use_hdpi_reneder_target() { use_hdpi = true; }
+  void use_hdpi_render_target() { use_hdpi = true; }
 
  protected:
 

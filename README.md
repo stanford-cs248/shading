@@ -4,16 +4,17 @@ The repository is located at https://github.com/stanford-cs248/shading
 
 ## Due date
 
-The assignment is due Tue Feb 26th, at 11:59:59 PM.
+The assignment is due Thu Feb 20th, at 11:59:59 PM.
 
 ## Summary
 
-In this assignment, you are a given a simple real-time renderer and a simple 3D scene.  However, the starter code implements only very simple material and lighting models, so rendered images do not look particularly great. In this assignment, you will improve the quality of the rendering by implementing a number of lighting and material shading effects using the GLSL, OpenGL's [shading language](https://thebookofshaders.com/01/).  The point of this assignment is to get basic experience with modern shader programming, and to build understanding of how material pattern logic, material BRDFs, and lighting computations are combined in a shader to compute surface reflectance.  Compared to assignments 1 and 2, this is a relatively short assignment, but there are countless ways you can keep going by adding more complex materials and lighting.  This is will be great fodder for final projects. We are interested to see what you can do!
+In this assignment, you are a given a simple real-time renderer and a simple 3D scene.  However, the starter code implements only very simple material and lighting models, so rendered images do not look particularly great. In this assignment, you will improve the quality of the rendering by implementing a number of lighting and material shading effects using the GLSL, OpenGL's [shading language](https://thebookofshaders.com/01/), as well as some OpenGL client code in C++.  The point of this assignment is to get basic experience with modern shader programming, and to build understanding of how material pattern logic, material BRDFs, and lighting computations are combined in a shader to compute surface reflectance.  There are countless ways you can keep going by adding more complex materials and lighting.  This is will be great fodder for final projects. We are interested to see what you can do!
 
 ## Build Instructions
 
 In order to ease the process of running on different platforms, we will be using [CMake](http://www.cmake.org/) for our assignments. You will need a CMake installation of version 2.8+ to build the code for this assignment. It should also be relatively easy to build the assignment and work locally on your OSX or 64-bit version of Linux or Windows.
 The project can be run by SSH'ing to rice.stanford.edu with your SUNet ID, password, and two-step authentication using MobaXterm (remember to turn on X11 forwarding). If you choose to do so, you can skip over to the next step.
+The project requires OpenGL version 3.0+.
 
 ### OS X/Linux Build Instructions
 
@@ -68,6 +69,9 @@ A table of all the keyboard controls in the application is provided below.
 | Command                                  |  Key  |
 | ---------------------------------------- | :---: |
 | Print camera parameters                  | 'C'   |
+| Visualize Shadow Map                     | 'V'   |
+| Disco Mode (Dancing Spotlights)          | 'D'   |
+| Hot reload all shaders                   | 'S'   |
 
 ## Getting Oriented in the Code ##
 
@@ -81,17 +85,33 @@ We didn't specifically talk about the specifics of GLSL programming in class, so
 
 * The assignment starter code JIT compiles your GLSL vertex and fragment shaders on-the-fly when the `render` application starts running.  Therefore, you won't know if the code successfully compiles until run time.  If you see a black screen while rendering, it's likely because your GLSL shader failed to compile.  __Look to your console for error messages about a failed compile.__
 
-### Part 1: Implementing Phong Reflectance (20 pts)
+The client C++ code that talks to GL can be quite complicated. Luckily for this assignment, we have abstracted away the messy state-setting to a couple of relatively simple APIs in GLResourceManager and Shader classes that work for this particular assignment. Look at their header files as well as the example calls in the starter code to see how they can be used. For the adventurous, we encourage you to look at the implementations of these two classes to get a sense on how to use OpenGL in a C++ client, since extra-credit or final project extensions of this assignment likely need to delve deeper.
 
-In the first part of this assignment you will implement two important aspects of defining a material.  First, you will implement a simple BRDF that implements the phong reflectance model to render a shiny surface.
-
+### Part 1: Coordinate transform
+In the first part of this assignment you will enable interactive inspection of the scene by deriving the correct transformation matrix from world space to camera space.
 To begin, render the spheres scene using the command:
 
     ./render ../media/spheres/spheres.json
 
 You should see an image that looks a bit like the one below:
 
-![Spheres starter image](misc/step1.jpg?raw=true)
+![Spheres starter image](misc/step0.png?raw=true)
+
+__IMPORTANT__: If you see a black screen it means your GL environment is not working correctly. Please reach out to course staff for help on getting it set up! Be prepared to provide the console error logs.
+
+__What you need to do:__
+
+Notice that mouse scroll, left/right click-drag does nothing. This is because the world2cam transformation matrix is stubbed out in `Scene::createWorldToCameraMatrix`.
+Your task is to derive the correct matrix to enable interactive inspection of the scene.
+
+A correct implementation will yield the following view, and allow interactive inspection with the mouse!
+
+![Correct World2Cam Transform](misc/step1.png?raw=true)
+
+
+### Part 2: Implementing Phong Reflectance
+
+In the later parts of this assignment you will implement two important aspects of defining a material.  First, you will implement a simple BRDF that implements the phong reflectance model to render a shiny surface.
 
 __What you need to do:__
 
@@ -99,9 +119,9 @@ Notice that the scene is rendered with a texture map on the ground plane and two
 
 A correct implementation of Phong reflectance should yield shaded spheres, which should look like this.
 
-![Spheres with phong](misc/step2.jpg?raw=true)
+![Spheres with phong](misc/step2.png?raw=true)
 
-### Part 2: Normal mapping (25 pts)
+### Part 3: Normal mapping
 
 Although there is a texture map on the ground plane and spheres to add detail to these surfaces, the surfaces continue to look "flat". Your next task to implement [normal mapping](http://cs248.stanford.edu/winter19/lecture/texture/slide_039) to create the illusion of a surface having more detail that what is modeled by the underlying geometry.  They idea of normal mapping is to perturb the surface's geometric normal with an offset by a vector encoded in a texture map.  An example "normal map" is shown at right in the image below.
 
@@ -118,17 +138,21 @@ First, modify the vertex shader `shader.vert` to compute a transform `tan2World`
 * Notice that in `shader.vert` you are given the normal (N) and surface tangent (T) at the current vertex.  But you are not given the third vector, often called the "binormal vector" (B) defining the Y-axis of tangent space.  How do you compute this vector given the normal and tangent?
 * How do you create a rotation matrix that takes tangent space vectors to object space vector?  [See this slide](http://cs248.stanford.edu/winter19/lecture/transforms/slide_049) for a hint.
 
-Second, in `shader.frag`, you need to sample the normal map (see `normalTextureSampler`), and then use `tan2World` to compute a world space normal at the current surface sample point.
+Second, in `shader.frag`, you need to sample the normal map, and then use `tan2World` to compute a world space normal at the current surface sample point.
+However, the normal map is not yet passed into the shader. You need to first create the binding in C++ in `Mesh::internalDraw` in `mesh.cpp` so that the shader have access to the normal map.
+Specifically, the normal map is handled as texture and we have already prepared the texture in GL in `Mesh::Mesh` and have saved a handle to the prepared texture as `normalTextureId_`.
+You should follow the example of `diffuseTextureSampler` to declare a texture sampler in `shader.frag` and bind the prepared texture to that using the handle `normalTextureId_`.
+After successfully passing the normal map to the fragment shader, you can modify `shader.frag` to sample it and compute the correct normal.
 
 We recommend that you debug normal mapping on the sphere scene (`media/spheres/spheres.json`).  
 
-Without normal mapping, the sphere looks like a flat sphere with a brick texture, as shown at left. But with normal mapping, notice how the bumpy surface creates more plausible reflective highlights in the rendering on the right.
+Without normal mapping, the sphere looks like a flat sphere with a brick texture, as shown previously. But with normal mapping, notice how the bumpy surface creates more plausible reflective highlights in the rendering on the right.
 
 With a correct implementation of normal mapping the scene will look like this:
 
-![Spheres with normal mapping](misc/step3.jpg?raw=true)
+![Spheres with normal mapping](misc/step3.png?raw=true)
 
-### Part 3: Adding Environment Lighting (25 pts)
+### Part 4: Adding Environment Lighting
 
 So far, your shaders have used simple point and directional light sources in the scene. (Notice that in `shader.frag` the code iterated over light sources and accumulated reflectance.)  We'd now like you to implement a more complex form of light source.  This light source, called an image based environment light, described [here in lecture](http://cs248.stanford.edu/winter19/lecture/materials/slide_037) represents light incoming on the scene from an _infinitely far source, but from all directions_.  Pixel (x,y) in the texture map encodes the magnitude and color and light from the direction (phi, theta).  Phi and theta encode a direction in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
 
@@ -136,68 +160,88 @@ __What you need to do:__
 
 In `media/shader.frag`, we'd like you to implement a perfectly mirror reflective surface.  The shader should [reflect the vector](http://cs248.stanford.edu/winter19/lecture/materials/slide_051) from the surface to the camera about the surface normal, and the use the reflected vector to perform a lookup in the environment map.  A few notes are below:
 
+* The environment map is not yet passed into the shader. Similar to what you did in normal mapping, you need to bind the texture with handle `environmentTextureId_` to a texture sampler in `shader.frag` in `Mesh::internalDraw` to make it available to the shader.
 * `dir2camera` conveniently gives you the direction from the surface _to the camera_.  It is not normalized.
 * The function `vec3 SampleEnvironmentMap(vec3 L)` takes as input a direction (outward from the scene), and returns the radiance from the environment light arriving from this direction (this is lightarriving at the surface from an infinitely far light source from the direction -L).
 * To perform an environment map lookup, you have to convert the reflection direction from its 3D Euclidean representation to spherical coordinates phi and theta.  In this assignment rendering is set up to use a a right-handed coordinate system (where Y is up, X is pointing to the right, and Z is pointing toward the camera), so you'll need to adjust the standard equations of converting from XYZ to spherical coordinates accordingly.  Specifically, in this assignment, the polar (or zenith) angle __theta__ is the angle between the direction and the Y axis.  The azimuthal angle __phi__ is zero when the direction vector is in the YZ plane, and increases as this vector rotates toward the XY plane. 
 
 Once you've correctly implemented an environment map lookups, the rightmost sphere will look as if it's a perfect mirror.
 
-![Spheres with normal mapping](misc/step4.jpg?raw=true)
+![Spheres with normal mapping](misc/step4.png?raw=true)
 
 You'll also be able to render a reflective teapot (`media/teapot/teapot.json`), as shown below.
 
 ![Mirror teapot](misc/teapot_mirror.png?raw=true)
 
-### Part 4: Adding Spotlights and Shadows (30 pts)
-
-__PLEASE PULL THE LATEST ASSIGNMENT 3 CODE FROM GITHUB AS IT IS NEEDED FOR PART 4.__
+### Part 5: Adding Spotlights and Shadows
 
 In the final part of this assignment you will implement a more advanced type of light source, a spotlight, as well as use shadow mapping with percentage closer filtering (PCF) to compute smooth shadows for your spotlights.  These more advanced lighting conditions will significantly improve the realism of your rendering.  When you are done with this part of the assignment, you will be able to render the scene `media/spheres/spheres_shadow.json` to get a rendering like this:
 
-![Nice shadowed spotlights](misc/spotlight_final.jpg?raw=true)
+![Nice shadowed spotlights](misc/shadow_final.png?raw=true)
 
-The scene is illuminated by two [spotlights](http://cs248.stanford.edu/winter19/lecture/materials/slide_035), a red spotlight coming from the front-left of the scene, and a white spotlight coming from the front-right.  The image below is a view from above the scene.
+The scene is illuminated by three [spotlights](http://cs248.stanford.edu/winter19/lecture/materials/slide_035), a red spotlight coming from the front-left of the scene, and a white spotlight coming from the front, and a cyan spotlight from front-right.  The image below is a view from above the scene.
 
-![View from above](misc/spotlight_above.jpg?raw=true)
+![View from above](misc/shadows_soft.png?raw=true)
 
-#### Part 4.1 Adding Spotlights (15 points) ####
+#### Part 5.1 Adding Spotlights ####
 
 The first step in this part of the assignment is to extend your fragment shader for rendering spotlights. You will need to modify `media/shader_shadow.frag` for this task.  Note that if you have completed Parts 1-3 of the assignment, you can drop your solutions from `shader.vert` and `shader.frag` into this file so that you can render `media/spheres/spheres_shadow.json` with correct texture mapping, normal mapping, and environment lighting. 
 
-1. Modify the `shader_shadow.frag` to compute the illumination from a spotlight by adding code to the body of the loop over spotlights.  Details about the implementation are in the starter code, but as a quick summary, a spotlight is a light that has non-zero illumination  only in directions that are within `cone_angle` of the light direction. Note that the intensity of a spotlight falls off with a 1/D^2 factor (where D is the distance from the light source). If you implement this logic, you should see an image that looks like the one below.  (Shown from front and from above).  In the image below, notice how the intensity of the spotlight falls off with distance.
+1. Modify the `shader_shadow.frag` to compute the illumination from a spotlight by adding code to the body of the loop over spotlights.  Details about the implementation are in the starter code, but as a quick summary, a spotlight is a light that has non-zero illumination  only in directions that are within `cone_angle` of the light direction. Note that the intensity of a spotlight falls off with a 1/D^2 factor (where D is the distance from the light source). If you implement this logic, you should see an image that looks like the one below.  In the image below, notice how the intensity of the spotlight falls off with distance.
 
-![Hardspot spotlights](misc/spotlight_hard.jpg?raw=true)
+![Hard spotlights](misc/spotlight_hard.png?raw=true)
 
-2. Notice that since your implementation of spotlights cuts off all illumination beyond the cone angle, the spotlights feature a hard boundary between light and dark.  You can soften this boundary by linearly interpolating illumination intensity from near the edge of the cone.  Please see details in the code, but in our reference solution, intensity of the spotlight starts falling off once the angle to the surface point is at least 90\% of the cone angle, and drops to zero illumination at 110% of the cone angle. With this smoother spotlight falloff you will see an image like this.
+![Hard spotlights from above](misc/spotlight_hard_above.png?raw=true)
 
-![Softer spotlights](misc/spotlight_soft.jpg?raw=true)
+2. Notice that since your implementation of spotlights cuts off all illumination beyond the cone angle, the spotlights feature a hard boundary between light and dark.  You can soften this boundary by linearly interpolating illumination intensity from near the edge of the cone.  Please see details in the code, but in our reference solution, intensity of the spotlight starts falling off once the angle to the surface point is at least 90% of the cone angle, and drops to zero illumination at 110% of the cone angle. With this smoother spotlight falloff you will see an image like this.
 
-#### Part 4.2 Adding Spotlights (15 points) ####
+![Softer spotlights](misc/spotlight_soft.png?raw=true)
+![Softer spotlights from above](misc/spotlight_soft_above.png?raw=true)
+
+#### Part 4.2 Shadow Mapping ####
 
 Now you will improve your spotlights so they cast shadows.  In class we discussed the [shadow mapping algorithm](http://cs248.stanford.edu/winter19/lecture/geometricqueries/slide_046) for approximating shadows in a rasterization-based rendering pipeline. Recall that shadow mapping requires two steps.
+
    1. In step 1, for each light source, we render scene geometry using a camera that is positioned at the light source. The result of rendering the scene from this vantage point is a depth buffer encoding the *closest point in the scene at each sample point*.  This depth buffer will be used as a single channel texture map provided to a fragment shader in step 2.
    2. In step 2, when calculating illumination during rendering (when shading a surface point), the fragment shader must compute whether the current surface point is in shadow from the perspective of the light source.  To do this, the fragment shader computes the coordinate of the current scene point *in the coordinate system* of a camera positioned at the light (in "light space"). It then uses the (x,y) values of this "light space" coordinate to perform a lookup into the shadow map texture.  If the surface is not the closest scene element to the light at this point, then it is in shadow.  
 
-We have implemented the first step of shadow mapping for you.  (Interested students can read through the implementaton of `Scene::render_shadow_pass()` in `src/dynamic_scene/scene.cpp`, however knowledge of this implementation is not necessary to do your part of the assignment. What you do need to know is that the application starter code provides your shader with two texture maps (`shadowTextureSampler0` and `shadowTextureSampler1` in `shader_shadow.frag`) that encode depth buffer contents after rendering the scene from the two respective spotlight positions, and two transformation matrices (`obj2shadowlight0` and `obj2shadowlight1`) that transform object-space points into the coordinate system of the light.  Your job is to use these variables to compute shadows for the two spotlights lights. Note, your implementation will only compute shadows for up to two spotlights, since we only give you two shadow maps.
+__What to do in C++ client code:__
+
+We have set up a new framebuffer for each spotlight to render its shadow pass, their handles are stored in `shadowFrameBufferId_`.
+In `Scene::renderShadowPass`, you need to bind GL to the correct framebuffer as its render target for the render pass.
+You also need to compute the correct view and projection matrix for the shadow pass rendering. You can look at `Scene::render` for how that is set-up for the final rendering with the real camera.
+Finally, you need to compute and store a `worldToShadowLight` matrix for every light that goes from world space to "light space". More details are in the starter code.
+
+However, you might be wondering what is the definition of the "light space"?  It is a coordinate space where the virtual camera is at the position of the spotlight, looking directly in the spotlight's direction, and after applying perspective projection.  You need to adjust the transform so that *after homogeneous divide* vertices that fall on screen during shadow map rendering are in the [0,1]^2 range and valid scene depths between the near and far clipping planes are in the [0-1] range.  You encourage you to read more about the [coordinate systems of shadow mapping here](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping).
+
+We have set-up the shadow textures as an [Array Texture](https://www.khronos.org/opengl/wiki/Array_Texture) that connects to the shadow-pass frame buffers.
+Once you have set-up the client code correctly, you should be able to visualize a depth map by pressing 'v'.
+
+![Depth Map](misc/depth_map.png?raw=true)
+
+The last step in the client code is to pass the array texture to the shader in `Mesh::internalDraw`, as you have done twice now with normal map and environment map.
+For Array Textures the syntax is a little different. Look in `Scene::visualizeShadowMap` and `media/shadow_viz.frag` to see how to use it.
+In `Mesh::internalDraw`, you also need to pass an array of matrices from object space to each "light space" to the shader. See starter code for details.
+
    
 __What to do in the vertex shader:__
 
-Your work in the vertex shader is quite easy.  Just transform the triangle vertex positions into light space, storing the results in vertex shader output variables `position_shadowlight0` and `position_shadowlight1`.  We won't say much more than this, since an example of how to transform these vertex positions into world space is already in the starter code. 
+Your work in the vertex shader is quite easy.  Just transform the triangle vertex positions into light space, create new vertex shader output variables for them to pass into the fragment shader.
 
-However, you might be wondering what is the definition of the "light space"?  It is a coordinate space where the virtual camera is at the position of the spotlight, looking directly in the spotlight's direction, and after applying perspective projection.  We've adjusted the transform so that *after homogeneous divide* vertices that fall on screen during shadow map rendering are in the [0,1]^2 range and valid scene depths between the near and far clipping planes are in the [0-1] range.  You encourage you to read more about the [coordinate systems of shadow mapping here](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping).
 
 __What to do in the fragment shader:__
 
-Your work in the fragment shader is a bit more complex.  The shader receives the light space *homogenous* position of the surface `position_shadowlight0` (for light 0), and must use this position to determine if the surface is in shadow from the perspective of this light.  Since the position is in 3D-homogeneous coordinates, you first need to extract a non-homogeneous XY via the homogeneous divide:
+Your work in the fragment shader is a bit more complex.  The shader receives the light space *homogenous* position of the surface (we called it `position_shadowlight` in reference solution), and must use this position to determine if the surface is in shadow from the perspective of this light.  Since the position is in 3D-homogeneous coordinates, you first need to extract a non-homogeneous XY via the homogeneous divide:
 
 ~~~~
-  vec2 shadow_uv = position_shadowlight0.xy / position_shadowlight0.w;
+  vec2 shadow_uv = position_shadowlight.xy / position_shadowlight.w;
 ~~~~
+
 Now you have a screen-space XY that you can use to sample the shadow map, and obtain the closest scene point at this location.  You will need to test the value returned by the texture lookup against the distance between the current surface point and the light to determine if the surface is in shadow. (How do you compute this?)
 
 At this point, you may notice errors in your image.  Read about the phenomenon of ["shadow acne"](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping) and correct any artifacts by adding a bias term to your shadow distance comparison.  Biasing pushes the surface being tested *closer to the light* so that only surfaces a good bit closer to the light can cast shadows on the current surface.  At this point, with a properly biased shadow test (the reference solution uses a quite large bias value of 0.05), you should get an image that looks like this (shown from a top view):
 
-![Hard shadows](misc/shadows_hard.jpg?raw=true)
+![Hard shadows](misc/shadows_hard.png?raw=true)
 
 As you move the camera and look at the scene from different viewpoints, you might observe aliasing (jaggies) at the edges of your shadows.  One way to approximate a smoother shadow boundary is to take multiple samples of the shadow map around a desired sample point, and then compute the fraction of samples that pass the test.  This technique, which is quite costly because it requires making multiple texture lookups (a form of supersampling), is called __percentage closure filtering__. Inuitively, by perturbing the location of the shadow map lookup, PCF is trying to determine how close to a shadow boundary the current surface point is. Points slower to the boundary are considered to be partially occluded, and the result is a smoother gradation of intensity near the shadow boundary. The basic pseudocode for a 25-sample implementation of PCF is:
 
@@ -216,9 +260,18 @@ for (int j=-2; j<=2; j++) {
 
 Notice that changing the parameter `pcf_step_size` governs how far apart your samples are, and thus has the effect of controlling the blurriness of the shadows.  Here is an example (from-above) of rendering with pleasing smooth shadows.
 
-![Smooth shadows](misc/shadows_soft.jpg?raw=true)
+![Smooth shadows](misc/shadows_soft.png?raw=true)
 
-You've done it!  You've now written a few key parts of a real time renderer!
+You've done it!  You've now written a few key parts of a real time renderer! Press `d` and enjoy the dancing lights and beautiful shadows!
+
+![Disco Mode](misc/disco.gif)
+
+__Shadow Debugging Tips__
+
+The shadow visualizer (trigged by v) is a handy debugging channel. You can modify the shaders `shadow_viz.vert` and `shadow_viz.frag` as well as `shadow_pass.vert` and `shadow_pass.frag` to compute and present information you want to visualize during debugging.
+For example, while we only use the depth information for the shadow pass render, we still create an additional color texture array `shadowColorTextureArrayId_` showing the actual rendered result from `shadow_pass.vert/frag` shaders.
+For your convenience in the starter code we render world-space normal images during the shadow pass onto the color texture array, which you can visualize by uncommenting the relevant code in `shadow_viz.frag`.
+You should be able to adapt this tooling for your own debugging needs.
 
 ### Extra Credit
 
@@ -240,4 +293,4 @@ Failure to submit this writeup will incur a penalty on the assignment.
 
 ## Handin Instructions
 
-We are using [Canvas](https://canvas.stanford.edu) as our submission tool. You should create and upload a zip archive of your entire `media/` subdirectory along with the writeup (e.g. writeup.txt).
+We are using [Canvas](https://canvas.stanford.edu) as our submission tool. You should create and upload a zip archive of your entire directory along with the writeup (e.g. writeup.txt). Please do __NOT__ include your build directory.

@@ -1,6 +1,9 @@
 #include "scene.h"
-#include "mesh.h"
+
 #include <fstream>
+
+#include "../gl_utils.h"
+#include "mesh.h"
 
 using namespace std;
 using std::cout;
@@ -9,377 +12,297 @@ using std::endl;
 namespace CS248 {
 namespace DynamicScene {
 
-Scene::Scene(std::vector<SceneObject *> _objects,
-             std::vector<SceneLight *> _lights,
-             const std::string& base_shader_dir) {
+namespace {
 
-  for (int i = 0; i < _objects.size(); i++) {
-    _objects[i]->scene = this;
-    objects.insert(_objects[i]);
-  }
+Matrix4x4 createPerspectiveMatrix(float fovy, float aspect, float near, float far) {
 
-  for (int i = 0; i < _lights.size(); i++) {
-    lights.insert(_lights[i]);
-  }
+  float f = 1.0 / tan(radians(fovy)/2.0);
 
-  for(SceneLight *slo : lights) {
-    StaticScene::SceneLight *light = slo->get_static_light();
-    if(dynamic_cast<StaticScene::DirectionalLight *>(light)) {
-        directional_lights.push_back((StaticScene::DirectionalLight *)light);
-    }
-    if(dynamic_cast<StaticScene::InfiniteHemisphereLight *>(light)) {
-        hemi_lights.push_back((StaticScene::InfiniteHemisphereLight *)light);
-    }
-    if(dynamic_cast<StaticScene::PointLight *>(light)) {
-        point_lights.push_back((StaticScene::PointLight *)light);
-    }
-    if(dynamic_cast<StaticScene::SpotLight *>(light)) {
-        spot_lights.push_back((StaticScene::SpotLight *)light);
-    }
-    if(dynamic_cast<StaticScene::AreaLight *>(light)) {
-        area_lights.push_back((StaticScene::AreaLight *)light);
-    }
-    if(dynamic_cast<StaticScene::SphereLight *>(light)) {
-        sphere_lights.push_back((StaticScene::SphereLight *)light);
-    }
-  }
-  current_pattern_id = 0;
-  current_pattern_subid = 0;
-  scaling_factor = .05f;
+  Matrix4x4 m;
+  m[0][0] = f / aspect;
+  m[0][1] = 0.f;
+  m[0][2] = 0.f;
+  m[0][3] = 0.f;
 
-  // create a frame buffer object to render shadows into
+  m[1][0] = 0.f;  
+  m[1][1] = f;
+  m[1][2] = 0.f;
+  m[1][3] = 0.f;
 
-  checkGLError("pre shadow fb setup");
-  
-  do_shadow_pass = false;
+  m[2][0] = 0.f;
+  m[2][1] = 0.f;
+  m[2][2] = (far + near) / (near - far);
+  m[2][3] = -1.f;
 
-  if (get_num_shadowed_lights() > 0) {
+  m[3][0] = 0.f;
+  m[3][1] = 0.f;
+  m[3][2] = (2.f * far * near) / (near - far);
+  m[3][3] = 0.0;
 
-    do_shadow_pass = true;
-    shadow_texture_size = 1024;
-    
-    for (int i=0; i<get_num_shadowed_lights(); i++) {
-
-      glGenFramebuffers(1, &shadow_framebuffer[i]);
-      glBindFramebuffer(GL_FRAMEBUFFER, shadow_framebuffer[i]);
-
-      glGenTextures(1, &shadow_texture[i]);
-      glBindTexture(GL_TEXTURE_2D, shadow_texture[i]);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, shadow_texture_size, shadow_texture_size, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-      glGenTextures(1, &shadow_color_texture[i]);
-      glBindTexture(GL_TEXTURE_2D, shadow_color_texture[i]);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, shadow_texture_size, shadow_texture_size, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-      glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, shadow_color_texture[i], 0);
-      glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, shadow_texture[i], 0);
-      //glDrawBuffer(GL_NONE); // No color buffer is drawn to
-      glReadBuffer(GL_NONE); // No color is read from   
-      
-      if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-          printf("Error: Frame buffer %d is not complete\n", i);
-          GLenum status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
-          switch (status) {
-          case GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER:
-              fprintf(stderr, "Incomplete draw buffer\n");
-              break;
-          case GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER:
-              fprintf(stderr, "Incomplete read buffer\n");
-              break;
-          default:
-              fprintf(stderr, "Unknown reason why fb is complete.\n");
-          }
-      }
-    }
-
-    checkGLError("post shadow framebuffer setup");
-    
-    // restore the screen as the render target
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-    // create shader object for shadow passes
-    string sepchar("/");
-    shadow_shader = new Shader(base_shader_dir + sepchar + "shadow_pass.vert",
-                               base_shader_dir + sepchar + "shadow_pass.frag", "", "");
-    checkGLError("post shadow shader compile");
-    shadow_shader2 = new Shader(base_shader_dir + sepchar + "shadow_pass_debug.vert",
-                                base_shader_dir + sepchar + "shadow_pass.frag", "", "");
-    checkGLError("post shadow shader2 compile");
-    shadow_viz_shader = new Shader(base_shader_dir + sepchar + "shadow_viz.vert",
-                                   base_shader_dir + sepchar + "shadow_viz.frag", "", "");
-    checkGLError("post shadow viz shader compile");
-  }
-
-  checkGLError("returning from Application::init");  
+  return m;
 }
 
+Matrix4x4 createWorldToCameraMatrix(const Vector3D& eye, const Vector3D& at, const Vector3D& up) {
+
+  // TODO CS248: Camera Matrix
+  // Compute the matrix that transforms a point in world space to a point in camera space.
+
+  return Matrix4x4::translation(Vector3D(-20,0,-150));
+
+}
+
+// Creates two triangles (6 positions, 18 floats) making up a square
+// The square uniformly samples the texture space (6 vertices, 12 floats).
+// Returns the vertex position and texcoord buffers
+std::pair<std::vector<float>, std::vector<float>> getTextureVizBuffers(float z) {
+  std::vector<float> vtx = {
+    -1, -1, z,
+    1, -1, z,
+    1, 1, z,
+    -1, -1, z,
+    1, 1, z,
+    -1, 1, z
+  };
+  std::vector<float> texcoords = {
+    0, 0,
+    1, 0,
+    1, 1,
+    0, 0,
+    1, 1,
+    0, 1
+  };
+  return std::make_pair(vtx, texcoords);
+}
+
+}  // namespace
+
+
+Scene::Scene(std::vector<SceneObject*> argObjects,
+             std::vector<SceneLight*>  argLights,
+             const std::string& baseShaderDir) {
+
+    for (int i = 0; i < argObjects.size(); i++) {
+        argObjects[i]->setScene(this);
+        objects_.insert(argObjects[i]);
+    }
+
+    for (int i = 0; i < argLights.size(); i++) {
+        lights_.insert(argLights[i]);
+    }
+
+    for (SceneLight* sl : lights_) {
+        StaticScene::SceneLight* light = sl->getStaticLight();
+        if (dynamic_cast<StaticScene::DirectionalLight*>(light)) {
+            directionalLights_.push_back((StaticScene::DirectionalLight*)light);
+        }
+        if (dynamic_cast<StaticScene::PointLight*>(light)) {
+            pointLights_.push_back((StaticScene::PointLight*)light);
+        }
+        if (dynamic_cast<StaticScene::SpotLight*>(light)) {
+            spotLights_.push_back((StaticScene::SpotLight*)light);
+            float delta = static_cast <float> (rand()) / static_cast <float> (RAND_MAX) * spotLightRotationSpeedRange_ - spotLightRotationSpeedRange_ / 2.0;
+            spotLightRotationSpeeds_.push_back(delta);
+        }
+        // if (dynamic_cast<StaticScene::InfiniteHemisphereLight *>(light)) {
+        //     hemiLights.push_back((StaticScene::InfiniteHemisphereLight*)light);
+        // }
+        // if (dynamic_cast<StaticScene::AreaLight*>(light)) {
+        //     areaLights.push_back((StaticScene::AreaLight*)light);
+        // }
+    }
+
+    // the following code creates frame buffer objects to render shadows
+
+    checkGLError("pre shadow fb setup");
+
+    doShadowPass_ = false;
+
+    if (getNumShadowedLights() > 0) {
+
+        printf("Setting up shadow assets\n");
+
+        doShadowPass_ = true;
+        shadowTextureSize_ = 1024;
+
+        gl_mgr_ = GLResourceManager::instance();
+    
+        for (int i=0; i<getNumShadowedLights(); i++) {
+
+          shadowFrameBufferId_[i] = gl_mgr_->createFrameBuffer();
+	        checkGLError("after creating framebuffer");
+
+        }
+
+        std::tie(shadowDepthTextureArrayId_, shadowColorTextureArrayId_) = gl_mgr_->createDepthAndColorTextureArrayFromFrameBuffers(
+            shadowFrameBufferId_, getNumShadowedLights(), shadowTextureSize_);
+        checkGLError("after binding shadow texture as attachment");
+
+        // glDrawBuffer(GL_NONE); // No color buffer is drawn to
+        // glReadBuffer(GL_NONE); // No color is read from
+
+        for (int i=0; i<getNumShadowedLights();i++) {
+            // sanity check
+            if (!gl_mgr_->checkFrameBuffer(shadowFrameBufferId_[i])) {
+                exit(1);
+            }
+        }
+
+        printf("Done setting up shadow assets\n");
+
+        checkGLError("post shadow framebuffer setup");
+        
+        printf("Creating shadow shaders\n");
+
+        // create shader object for shadow passes
+        string sepchar("/");
+        shadowShader_ = new Shader(baseShaderDir + sepchar + "shadow_pass.vert",
+                                  baseShaderDir + sepchar + "shadow_pass.frag");
+        checkGLError("post shadow shader compile");
+        // checkGLError("post shadow shader debug compile");
+        shadowVizShader_ = new Shader(baseShaderDir + sepchar + "shadow_viz.vert",
+                                     baseShaderDir + sepchar + "shadow_viz.frag");
+
+        std::vector<float> vtx, texcoords;
+        std::tie(vtx, texcoords) = getTextureVizBuffers(/*z=*/0.0);
+        shadowVizVertexArrayId_ = gl_mgr_->createVertexArray();
+        shadowVizVtxBufferId_ = gl_mgr_->createVertexBufferFromData(vtx.data(), vtx.size());
+        shadowVizTexCoordBufferId_ = gl_mgr_->createVertexBufferFromData(texcoords.data(), texcoords.size());
+        checkGLError("post shadow viz shader compile");
+
+        printf("Shaders created.\n");
+    }
+
+    checkGLError("returning from Scene::Scene");  
+}
 
 Scene::~Scene() { }
 
-BBox Scene::get_bbox() {
-  BBox bbox;
-  for (SceneObject *obj : objects) {
-    bbox.expand(obj->get_bbox());
-  }
-  return bbox;
+size_t Scene::getNumShadowedLights() const {
+    // for now, assume all spotlights (up to SCENE_MAX_SHADOWED_LIGHTS) are shadowed
+    return std::min((int)spotLights_.size(), SCENE_MAX_SHADOWED_LIGHTS);
 }
 
-bool Scene::addObject(SceneObject *o) {
-  auto i = objects.find(o);
-  if (i != objects.end()) {
-    return false;
-  }
-
-  o->scene = this;
-  objects.insert(o);
-  return true;
+BBox Scene::getBBox() const {
+    BBox bbox;
+    for (SceneObject *obj : objects_) {
+        bbox.expand(obj->getBBox());
+    }
+    return bbox;
 }
 
-bool Scene::removeObject(SceneObject *o) {
-  auto i = objects.find(o);
-  if (i == objects.end()) {
-    return false;
-  }
+void Scene::reloadShaders() {
 
-  objects.erase(o);
-  return true;
+    checkGLError("begin Scene::reloadShaders");
+
+    printf("Reloading all shaders.\n");
+
+    // FIXME(kayvonf): this breaks the abstraction that the shader class is the only place
+    // where shader program bindings are changed.  Fix this later.  We may not need it at all.
+    glUseProgram(0);
+
+
+    if (getNumShadowedLights() > 0) {
+      shadowShader_->reload();
+      shadowVizShader_->reload();
+    }
+
+    for (SceneObject *obj : objects_)
+        obj->reloadShaders();
+
+    checkGLError("end Scene::reloadShaders");
 }
 
-void Scene::render_in_opengl() {
-    for (SceneObject *obj : objects)
-      if (obj->isVisible)
-        obj->draw();
+void Scene::render() {
+  
+    checkGLError("begin Scene::render");
+
+    Matrix4x4 worldToCamera = createWorldToCameraMatrix(camera_->getPosition(), camera_->getViewPoint(), camera_->getUpDir());
+    Matrix4x4 proj = createPerspectiveMatrix(camera_->getVFov(), camera_->getAspectRatio(), camera_->getNearClip(), camera_->getFarClip());  
+    Matrix4x4 worldToCameraNDC = proj * worldToCamera;
+
+    for (SceneObject *obj : objects_)
+        obj->draw(worldToCameraNDC);
+
+    checkGLError("end Scene::render");
+
 }
 
-void Scene::visualize_shadow_map() {
+void Scene::renderShadowPass(int shadowedLightIndex) {
 
+    checkGLError("begin shadow pass");
+
+    Vector3D lightDir  = spotLights_[shadowedLightIndex]->direction;
+    Vector3D lightPos  = spotLights_[shadowedLightIndex]->position;
+    float    coneAngle = spotLights_[shadowedLightIndex]->angle;
+
+    // I'm making the fovy (field of view in y direction) of the shadow map
+    // rendering a bit larger than the cone angle just to be safe. Clamp at 60 degrees.
+    float fovy = std::max(1.4f * coneAngle, 60.0f);
+    float aspect = 1.0f;
+    float near = 10.f;
+    float far = 400.;
+
+    // TODO CS248: Shadow Mapping
+    // Here we render the shadow map for the given light. You need to accomplish the following:
+    // (1) You need to use gl_mgr_->bindFrameBuffer on the correct framebuffer to render into.
+    // (2) You need to compute the correct worldToLightNDC matrix to pass into drawShadow by
+    //     pretending there is a camera at the light source looking at the scene. Some fake camera
+    //     parameters are provided to you in the code above.
+    // (3) You need to compute a worldToShadowLight matrix that takes the point in world space and
+    //     transforms it into "light space" for the fragment shader to use to sample from the shadow map.
+    //     Note that this is almost worldToLightNDC with an additional transform that converts 
+    //     coordinates in the [-w,w]^3 normalized device coordinate box 
+    //     (the result of the perspective projection transform) to coordinates in a [0,w]^3 volume.
+    //     After homogeneous divide. this means that x,y correspond to valid texture
+    //     coordinates in the [0,1]^2 domain that can be used for a shadow map lookup in the shader.
+    //     You should put it in the right place in worldToShadowLight_ array.
+    // Caveat: GLResourceManager::bindFrameBuffer uses the RAII idiom (https://en.cppreference.com/w/cpp/language/raii)
+    //     Which means you have to give the return value a name since its destructor will release the binding.
+    //     Bad:
+    //       gl_mgr_->bindFrameBuffer(100);  // Return value is destructed immediately!
+    //       drawTriangles();  //  <- Framebuffer 100 is not bound!!!
+    //     Good:
+    //       auto fb_bind = gl_mgr_->bindFrameBuffer(100);
+    //       drawTriangles();  //  <- Framebuffer 100 is bound, since fb_bind is still alive here.
+    // 
+    // Replaces the following lines with correct implementation.
+    Matrix4x4 worldToLightNDC = Matrix4x4::identity();
+    worldToShadowLight_[shadowedLightIndex].zero();
+
+    glViewport(0, 0, shadowTextureSize_, shadowTextureSize_);
+
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+    glEnable(GL_DEPTH_TEST);
+
+    // Now draw all the objects in the scene
+    for (SceneObject *obj : objects_)
+        obj->drawShadow(worldToLightNDC);
+
+    checkGLError("end shadow pass");
+    
+}
+
+void Scene::visualizeShadowMap() {
     checkGLError("pre viz shadow map");
 
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, shadow_color_texture[0]);
-    //glBindTexture(GL_TEXTURE_2D, shadow_texture[0]);
-
-    glUseProgram(shadow_viz_shader->_programID);
-
-    glBegin(GL_TRIANGLES);
-    float z = 0.0;
-
-    glTexCoord2f(0.0, 0.0);
-    glVertex3f(-1.0, -1.0, z);
-    glTexCoord2f(1.0, 0.0);
-    glVertex3f(1.0, -1.0, z);
-    glTexCoord2f(1.0, 1.0);
-    glVertex3f(1.0, 1.0, z);
-
-    //////
-
-    glTexCoord2f(0.0, 0.0);
-    glVertex3f(-1.0, -1.0, z);
-    glTexCoord2f(1.0, 1.0);
-    glVertex3f(1.0, 1.0, z);
-    glTexCoord2f(0.0, 1.0);
-    glVertex3f(-1.0, 1.0, z);
-
-    glEnd();
-
-    glUseProgram(0);
+    auto vertex_array_bind = gl_mgr_->bindVertexArray(shadowVizVertexArrayId_);
+    auto shader_bind = shadowVizShader_->bind();
+    shadowVizShader_->setVertexBuffer("vtx_position", 3, shadowVizVtxBufferId_);
+    shadowVizShader_->setVertexBuffer("vtx_texcoord", 2, shadowVizTexCoordBufferId_);
+    shadowVizShader_->setTextureArraySampler("depthTextureArray", shadowDepthTextureArrayId_);
+    shadowVizShader_->setTextureArraySampler("colorTextureArray", shadowColorTextureArrayId_);
+    // now issue the draw command to OpenGL
+    checkGLError("before glDrawArrays for shadow viz");
+    // 6 indices, 2 triangles to render
+    glDrawArrays(GL_TRIANGLES, /*first=*/0, /*count=*/6);
 
     checkGLError("post viz shadow map");
 }
 
-// helper
-static Matrix4x4 glToMatrix4x4(float* glMatrix) {
-
-  Matrix4x4 m;
-  int idx = 0;
-  for (int j=0; j<4; j++)
-    for (int i=0; i<4; i++)
-      m[j][i] = glMatrix[idx++];
-  
-  return m;
-}
-
-int Scene::get_num_shadowed_lights() const {
-  return std::min( (int)spot_lights.size(), SCENE_MAX_SHADOWED_LIGHTS);
-}
-
-void Scene::render_shadow_pass() {
-
-    checkGLError("begin shadow pass");
-
-    for (int i=0; i<get_num_shadowed_lights(); i++) {
-
-      Vector3D light_dir = spot_lights[i]->direction;
-      Vector3D light_pos = spot_lights[i]->position;
-      float    cone_angle = spot_lights[i]->angle;
-
-      //printf("Spot light dir %f %f %f\n", light_dir.x, light_dir.y, light_dir.z);
-      //printf("Spot light pos %f %f %f\n", light_pos.x, light_pos.y, light_pos.z);
-      //printf("Spot light angle %f\n", cone_angle);
-
-      glBindFramebuffer(GL_DRAW_FRAMEBUFFER, shadow_framebuffer[i]);
-      glViewport(0, 0, shadow_texture_size, shadow_texture_size);
-
-      //glClear(GL_DEPTH_BUFFER_BIT);
-      glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-      glMatrixMode(GL_PROJECTION);
-      glLoadIdentity();
-
-      // I'm making the fovy (field of view in y direction) of the shadow map
-      // rendering a bit larger than the cone angle just to be safe. Clamp at 60 degrees.
-      float fovy = std::max(1.4f * cone_angle, 60.0f);
-      gluPerspective(fovy, 1.0f, 10.0f, 400.f);
-      
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
-
-      // The spot light is positioned at light_pos and looking in the given direction.
-      // Therefore it is looking at a point given by light_pos + light_dir
-      Vector3D lookat_pos = light_pos + light_dir;
-      gluLookAt(light_pos.x, light_pos.y, light_pos.z,
-                lookat_pos.x, lookat_pos.y, lookat_pos.z,   // look at center of scene
-                0.0, 1.0, 0.0);  // Y up direction
-
-      // Since the assignment code relies on the gluPerspective/gluLookAt for constructing
-      // matrices, I retrieve the matrices here to form a world-to-light-space matrix.
-      // A more modern approach approach is to maintain the matrices in the application
-      // and then provide them to the pipeline as uniforms
-      GLfloat cameraMatrix[16]; 
-      GLfloat projMatrix[16]; 
-      glGetFloatv(GL_MODELVIEW_MATRIX, cameraMatrix); 
-      glGetFloatv(GL_PROJECTION_MATRIX, projMatrix); 
-
-      // The bias matrix converts coordinates in the [-w,w]^3 normalized device coordinate box (the
-      // result of the perspective projection transform) to coordinates in a [0,w]^3 volume.
-      // After homogeneous divide. this means that x,y correspond to valid texture
-      // coordinates in the [0,1]^2 domain that can be used for a shadow map lookup in the shader.
-      // Notice that the matrix is just a scale and translation as to be expected.
-      Matrix4x4 bias = Matrix4x4::translation(Vector3D(0.5,0.5,0.5)) * Matrix4x4::scaling(0.5);
-      Matrix4x4 cam = glToMatrix4x4(cameraMatrix);
-      Matrix4x4 proj = glToMatrix4x4(projMatrix);
-
-      // printf("Shadow %d info:\n", i); 
-      //cout << bias << endl << endl;
-      // cout << cam  << endl << endl;
-      //cout << proj << endl << endl;
-
-      world_to_shadowlight[i] = bias * proj * cam;
-      //
-      // end world-to-shadow space transform construction hack
-      //
-
-      // Now draw all the objects in the scene
-      for (SceneObject *obj : objects)
-        if (obj->isVisible)
-          obj->draw_shadow();
-
-      /*
-      glUseProgram(shadow_shader2->_programID);
-      glBegin(GL_TRIANGLES);
-      glVertex3f(-1, -1, 0);
-      glVertex3f(1, -1, 0);
-      glVertex3f(-1, 1, 0);
-      glEnd();
-      glUseProgram(0);
-      */
-
-      glBindFramebuffer(GL_FRAMEBUFFER, 0);
-      checkGLError("end shadow pass");
-    }
-
-}
-    
-void Scene::prevPattern() {
-    current_pattern_id = min(max((int)current_pattern_id - 1, (int)0), (int)patterns.size() - 1);
-}
-
-void Scene::nextPattern() {
-    current_pattern_id = min(max((int)current_pattern_id + 1, (int)0), (int)patterns.size() - 1);
-}
-
-void Scene::decreaseCurrentPattern(double scale) {
-    if(patterns.size() > 0) {
-        int type = patterns[current_pattern_id].type;
-        if(type == 0) {
-            patterns[current_pattern_id].v[current_pattern_subid] -= scaling_factor;
-        }
-        else if(type == 1) {
-            patterns[current_pattern_id].s -= scaling_factor;
-            patterns[current_pattern_id].s = (patterns[current_pattern_id].s < 0.f) ? 0.f : patterns[current_pattern_id].s;
-        }
-    }
-}
-
-void Scene::increaseCurrentPattern(double scale) {
-    if(patterns.size() > 0) {
-        int type = patterns[current_pattern_id].type;
-        if(type == 0)
-            patterns[current_pattern_id].v[current_pattern_subid] += scaling_factor;
-        else if(type == 1) {
-            patterns[current_pattern_id].s += scaling_factor;
-            patterns[current_pattern_id].s = (patterns[current_pattern_id].s > 1.0f) ? 1.0f : patterns[current_pattern_id].s;
-        }
-    }
-}
-
-StaticScene::Scene *Scene::get_static_scene() {
-  std::vector<StaticScene::SceneObject *> staticObjects;
-  std::vector<StaticScene::SceneLight *> staticLights;
-
-  for (SceneObject *obj : objects) {
-    auto staticObject = obj->get_static_object();
-    if (staticObject != nullptr) staticObjects.push_back(staticObject);
+void Scene::rotateSpotLights() {
+  for (int i = 0; i < getNumSpotLights(); ++i) {
+    spotLights_[i]->rotate(spotLightRotationSpeeds_[i]);
   }
-  for (SceneLight *light : lights) {
-    staticLights.push_back(light->get_static_light());
-  }
-
-  return new StaticScene::Scene(staticObjects, staticLights);
-}
-
-StaticScene::Scene *Scene::get_transformed_static_scene(double t) {
-  std::vector<StaticScene::SceneObject *> staticObjects;
-  std::vector<StaticScene::SceneLight *> staticLights;
-
-  for (SceneObject *obj : objects) {
-    auto staticObject = obj->get_transformed_static_object(t);
-    if (staticObject != nullptr) staticObjects.push_back(staticObject);
-  }
-  for (SceneLight *light : lights) {
-    staticLights.push_back(light->get_static_light());
-  }
-  return new StaticScene::Scene(staticObjects, staticLights);
-}
-
-Matrix4x4 SceneObject::getTransformation() {
-  Vector3D rot = rotation * M_PI / 180;
-  return Matrix4x4::translation(position) *
-         Matrix4x4::rotation(rot.x, Matrix4x4::Axis::X) *
-         Matrix4x4::rotation(rot.y, Matrix4x4::Axis::Y) *
-         Matrix4x4::rotation(rot.z, Matrix4x4::Axis::Z) *
-         Matrix4x4::scaling(scale);
-}
-
-Matrix4x4 SceneObject::getRotation() {
-  Vector3D rot = rotation * M_PI / 180;
-  return Matrix4x4::rotation(rot.x, Matrix4x4::Axis::X) *
-         Matrix4x4::rotation(rot.y, Matrix4x4::Axis::Y) *
-         Matrix4x4::rotation(rot.z, Matrix4x4::Axis::Z);
 }
 
 }  // namespace DynamicScene

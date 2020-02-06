@@ -6,6 +6,7 @@
 
 #include <chrono>
 
+//#define GLFW_INCLUDE_GLCOREARB
 #include "GLFW/glfw3.h"
 
 namespace CS248 {
@@ -37,27 +38,21 @@ class Viewer {
    * Destroys the viewer instance and frees memory.
    * Note that this does not change the user space renderer.
    */
-  ~Viewer( void );
+  ~Viewer();
 
   /**
    * Initialize the viewer.
    * This will open up a window and install all the event handlers
    * and make the viewer ready for drawing.
+   *
    */
-  void init( void );
+  void init(Renderer* renderer);
 
   /**
    * Start the drawing loop of the viewer.
    * Once called this will block until the viewer is close.
    */
-  void start( void );
-  
-  /**
-   * Set a user space renderer.
-   * The viewer will use the given user space renderer in drawing.
-   * \param renderer The user space renderer to use in the viewer.
-   */
-  void set_renderer( Renderer *renderer );
+  void start();
   
   /**
    * Show an error to the user in the GUI.
@@ -104,14 +99,13 @@ class Viewer {
   static size_t buffer_w;
   static size_t buffer_h;
 
-  // user space renderer
+  // renderer
   static Renderer* renderer;
 
   // on-screen display
   static OSDText* osd_text;
   static int line_id_renderer;
   static int line_id_framerate;
-  static int line_id_pattern;
 
   // Error Dialogs //
   static void drawError();

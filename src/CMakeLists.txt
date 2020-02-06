@@ -20,9 +20,11 @@ set(APPLICATION_SOURCE
     static_scene/light.cpp
 
     # Shader
+    gl_utils.cpp
     bbox.cpp
     camera.cpp
     shader.cpp
+    gl_resource_manager.cpp
 	
     # Application
     application.cpp

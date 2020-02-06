@@ -21,8 +21,8 @@
 			"id" : "spotlight",
 		    "name" : "main_spotlight",
 			"type" : "spot",
-            "position" : [100, 100, 100],
-			"direction" : [-1, -1, -1],
+            "position" : [0, 100, 100],
+			"direction" : [0, -1, -1],
             "falloff_deg" : 20.0,
             "intensity" : [20000, 20000, 20000]
 		},
@@ -35,6 +35,16 @@
 			"direction" : [1, -1, -1],
             "falloff_deg" : 20.0,
             "intensity" : [20000, 6000, 6000]
+		},
+
+		{
+			"id" : "spotlight",
+		    "name" : "main_spotlight",
+			"type" : "spot",
+            "position" : [100, 100, 100],
+			"direction" : [-1, -1, -1],
+            "falloff_deg" : 20.0,
+            "intensity" : [6000, 20000, 20000]
 		}
 	],
     

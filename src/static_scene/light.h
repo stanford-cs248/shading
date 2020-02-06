@@ -55,10 +55,13 @@ class SpotLight : public SceneLight {
             float cone_angle);
   bool is_delta_light() const { return true; }
 
+  void rotate(float delta);
+
   Spectrum radiance;
   Vector3D position;
   Vector3D direction;
   float angle;
+  float delta;
 
 };  // class SpotLight
 

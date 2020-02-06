@@ -1617,112 +1617,117 @@ bool ColladaParser::parse_mtl(ifstream &in, PolymeshInfo& polymesh) {
 // ============ ColladaWriter =========================================
 // ====================================================================
 
-bool ColladaWriter::writeScene(DynamicScene::Scene& scene,
-                               const char* filename) {
-  ofstream out(filename);
-  if (!out.is_open()) {
-    cerr << "WARNING: Could not open file " << filename
-         << " for COLLADA export!" << endl;
-    return false;
-  }
 
-  writeHeader(out);
-  writeGeometry(out, scene);
-  // TODO lights, camera, materials
-  writeVisualScenes(out, scene);
-  writeFooter(out);
+// bool ColladaWriter::writeScene(DynamicScene::Scene& scene,
+//                                const char* filename) {
+//   ofstream out(filename);
+//   if (!out.is_open()) {
+//     cerr << "WARNING: Could not open file " << filename
+//          << " for COLLADA export!" << endl;
+//     return false;
+//   }
 
-  return true;
-}
+//   writeHeader(out);
+//   writeGeometry(out, scene);
+//   // TODO lights, camera, materials
+//   writeVisualScenes(out, scene);
+//   writeFooter(out);
 
-void writeCurrentTime(ofstream& out) {
-  auto t = time(nullptr);
-  auto tm = *localtime(&t);
+//   return true;
+// }
 
-  out << tm.tm_year + 1900 << "-";
-  if (tm.tm_mon < 10) out << "0";
-  out << tm.tm_mon + 1 << "-";
-  if (tm.tm_mday < 10) out << "0";
-  out << tm.tm_mday << "T";
-  if (tm.tm_hour < 10) out << "0";
-  out << tm.tm_hour << ":";
-  if (tm.tm_min < 10) out << "0";
-  out << tm.tm_min << ":";
-  if (tm.tm_sec < 10) out << "0";
-  out << tm.tm_sec;
-}
+// void writeCurrentTime(ofstream& out) {
+//   auto t = time(nullptr);
+//   auto tm = *localtime(&t);
 
-void ColladaWriter::writeHeader(ofstream& out) {
-  out << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl;
-  out << "<COLLADA xmlns=\"http://www.collada.org/2005/11/COLLADASchema\" "
-         "version=\"1.4.1\">"
-      << endl;
-  out << "<asset>" << endl;
-  out << "   <contributor>" << endl;
-  out << "      <author>Cardinal</author>" << endl;
-  out << "      <authoring_tool>Stanford Cardinal3D (version "
-         "CS248)</authoring_tool>"
-      << endl;
-  out << "   </contributor>" << endl;
-  out << "   <created>";
-  writeCurrentTime(out);
-  out << "</created>" << endl;
-  out << "   <modified>";
-  writeCurrentTime(out);
-  out << "</modified>" << endl;
-  out << "   <unit name=\"meter\" meter=\"1\"/>" << endl;
-  out << "   <up_axis>Y_UP</up_axis>" << endl;
-  out << "</asset>" << endl;
-}
+//   out << tm.tm_year + 1900 << "-";
+//   if (tm.tm_mon < 10) out << "0";
+//   out << tm.tm_mon + 1 << "-";
+//   if (tm.tm_mday < 10) out << "0";
+//   out << tm.tm_mday << "T";
+//   if (tm.tm_hour < 10) out << "0";
+//   out << tm.tm_hour << ":";
+//   if (tm.tm_min < 10) out << "0";
+//   out << tm.tm_min << ":";
+//   if (tm.tm_sec < 10) out << "0";
+//   out << tm.tm_sec;
+// }
 
-void ColladaWriter::writeFooter(ofstream& out) { out << "</COLLADA>" << endl; }
+// void ColladaWriter::writeHeader(ofstream& out) {
+//   out << "<?xml version=\"1.0\" encoding=\"utf-8\"?>" << endl;
+//   out << "<COLLADA xmlns=\"http://www.collada.org/2005/11/COLLADASchema\" "
+//          "version=\"1.4.1\">"
+//       << endl;
+//   out << "<asset>" << endl;
+//   out << "   <contributor>" << endl;
+//   out << "      <author>Cardinal</author>" << endl;
+//   out << "      <authoring_tool>Stanford Cardinal3D (version "
+//          "CS248)</authoring_tool>"
+//       << endl;
+//   out << "   </contributor>" << endl;
+//   out << "   <created>";
+//   writeCurrentTime(out);
+//   out << "</created>" << endl;
+//   out << "   <modified>";
+//   writeCurrentTime(out);
+//   out << "</modified>" << endl;
+//   out << "   <unit name=\"meter\" meter=\"1\"/>" << endl;
+//   out << "   <up_axis>Y_UP</up_axis>" << endl;
+//   out << "</asset>" << endl;
+// }
 
-void ColladaWriter::writeGeometry(ofstream& out, DynamicScene::Scene& scene) {
-  int nMeshes = 0;
+// void ColladaWriter::writeFooter(ofstream& out) { out << "</COLLADA>" << endl; }
 
-  out << "   <library_geometries>" << endl;
-  for (auto o : scene.objects) {
-    DynamicScene::Mesh* mesh = dynamic_cast<DynamicScene::Mesh*>(o);
-    if (mesh) {
-      nMeshes++;
-      writeMesh(out, mesh, nMeshes);
-    }
-  }
-  out << "   </library_geometries>" << endl;
-}
+// void ColladaWriter::writeGeometry(ofstream& out, DynamicScene::Scene& scene) {
+//   int nMeshes = 0;
 
-void ColladaWriter::writeMesh(ofstream& out, DynamicScene::Mesh* mesh, int id) {
-	std::cout << "writeMesh(): NYI. Continuing..." << std::endl;
-}
+//   std::cout << "writeGeometry(): NYI. Continuing..." << std::endl;
 
-void ColladaWriter::writeVisualScenes(ofstream& out,
-                                      DynamicScene::Scene& scene) {
-  out << "   <library_visual_scenes>" << endl;
-  out << "      <visual_scene id=\"CardinalScene\">" << endl;
+//   out << "   <library_geometries>" << endl;
+//   /*
+//   for (auto o : scene.objects) {
+//     DynamicScene::Mesh* mesh = dynamic_cast<DynamicScene::Mesh*>(o);
+//     if (mesh) {
+//       nMeshes++;
+//       writeMesh(out, mesh, nMeshes);
+//     }
+//   }
+//   */
+//   out << "   </library_geometries>" << endl;
+// }
 
-  int nMeshes = 0;
-  int nNodes = 0;
-  for (auto o : scene.objects) {
-    DynamicScene::Mesh* mesh = dynamic_cast<DynamicScene::Mesh*>(o);
-    if (mesh) {
-      nMeshes++;
-      nNodes++;
-      out << "         <node id=\"N" << nNodes << "\" name=\"Node" << nNodes
-          << "\">" << endl;
-      out << "            <instance_geometry url=\"#M" << nMeshes << "\">"
-          << endl;
-      out << "            </instance_geometry>" << endl;
-      out << "         </node>" << endl;
-    }
-  }
+// void ColladaWriter::writeMesh(ofstream& out, DynamicScene::Mesh* mesh, int id) {
+// 	std::cout << "writeMesh(): NYI. Continuing..." << std::endl;
+// }
 
-  out << "      </visual_scene>" << endl;
-  out << "   </library_visual_scenes>" << endl;
+// void ColladaWriter::writeVisualScenes(ofstream& out,
+//                                       DynamicScene::Scene& scene) {
+//   out << "   <library_visual_scenes>" << endl;
+//   out << "      <visual_scene id=\"CardinalScene\">" << endl;
 
-  out << "   <scene>" << endl;
-  out << "      <instance_visual_scene url=\"#CardinalScene\"/>" << endl;
-  out << "   </scene>" << endl;
-}
+//   int nMeshes = 0;
+//   int nNodes = 0;
+//   for (auto o : scene.objects) {
+//     DynamicScene::Mesh* mesh = dynamic_cast<DynamicScene::Mesh*>(o);
+//     if (mesh) {
+//       nMeshes++;
+//       nNodes++;
+//       out << "         <node id=\"N" << nNodes << "\" name=\"Node" << nNodes
+//           << "\">" << endl;
+//       out << "            <instance_geometry url=\"#M" << nMeshes << "\">"
+//           << endl;
+//       out << "            </instance_geometry>" << endl;
+//       out << "         </node>" << endl;
+//     }
+//   }
+
+//   out << "      </visual_scene>" << endl;
+//   out << "   </library_visual_scenes>" << endl;
+
+//   out << "   <scene>" << endl;
+//   out << "      <instance_visual_scene url=\"#CardinalScene\"/>" << endl;
+//   out << "   </scene>" << endl;
+// }
 
 }  // namespace Collada
 }  // namespace CS248

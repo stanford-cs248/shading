@@ -5,122 +5,76 @@
 
 #include "../collada/polymesh_info.h"
 #include "../shader.h"
+#include "../gl_resource_manager.h"
 
 #include <map>
 
 namespace CS248 {
 namespace DynamicScene {
 
-// A structure for holding linear blend skinning information
-class LBSInfo {
- public:
-  Vector3D blendPos;
-  double distance;
-};
 
+// We need to define new vector structs for fp32 fields. In other words, using floats, not doubles. 
+// Note that in the CS248 starter codebase the Vector2D/3D types have fields that are doubles.
 struct Vector2Df {
-public:
-  float x, y;
+    float x, y;
 };
 
 struct Vector3Df {
-public:
-	float x, y, z;
+    float x, y, z;
 };
 
+
 class Mesh : public SceneObject {
- public:
-  Mesh(Collada::PolymeshInfo &polyMesh, const Matrix4x4 &transform, const std::string shader_prefix = "");
+  public:
+    Mesh(Collada::PolymeshInfo& polyMesh, const Matrix4x4& transform);
+    ~Mesh();
 
-  ~Mesh();
-
-  virtual void draw() override;
-  virtual void draw_shadow() override;
-
-  void draw_pretty() override;
-
-  StaticScene::SceneObject *get_transformed_static_object(double t) override;
-
-  BBox get_bbox() override;
-
-  StaticScene::SceneObject *get_static_object() override;
+    void draw(const Matrix4x4& worldToNDC) const override;
+    void drawShadow(const Matrix4x4& worldToNDC) const override;
+    BBox getBBox() const override;
+    void reloadShaders() override;
 
  private:
-  // Helpers for draw().
-  void draw_faces(bool smooth, bool is_shadow_pass) const;
-  void draw_pass(bool is_shadow_pass);
 
-  // Texture map
-  vector<unsigned char> diffuse_texture;
-  vector<unsigned char> normal_texture;
-  vector<unsigned char> environment_texture;
-  vector<unsigned char> alpha_texture;
-  vector<unsigned char> stub1_texture;
-  vector<unsigned char> stub2_texture;
-  vector<unsigned char> stub3_texture;
-  unsigned int diffuse_texture_width, diffuse_texture_height;
-  unsigned int normal_texture_width, normal_texture_height;
-  unsigned int environment_texture_width, environment_texture_height;
-  unsigned int alpha_texture_width, alpha_texture_height;
-  unsigned int stub1_texture_width, stub1_texture_height;
-  unsigned int stub2_texture_width, stub2_texture_height;
-  unsigned int stub3_texture_width, stub3_texture_height;
-  
-  string vertex_shader_program;
-  string fragment_shader_program;
+    // Helper called by draw() and drawShadow()
+    void internalDraw(bool shadowPass, const Matrix4x4& worldToNDC) const;
+      
+    int numTriangles_;
 
-  vector<vector<size_t>> polygons;
-  vector<Collada::Polygon> polygons_carbon_copy;
-  
-  // Per vertex
-  vector<Vector3Df> vertices;
-  vector<Vector3Df> normals;
-  vector<Vector2Df> texture_coordinates;
-  vector<Vector3Df> tangentData;
-  vector<Vector3Df> bitangents;
-  
-  // Per face
-  vector<Vector3Df> diffuse_colors;
-  
-  // Packed
-  vector<Vector3Df> vertexData;
-  vector<Vector3Df> diffuse_colorData;
-  vector<Vector3Df> normalData;
-  vector<Vector2Df> texcoordData;
+    // Per vertex mesh data.  These allocations are the host-side buffers whose contents are
+    // copied into OpenGL vertex buffers.  Note that we do not use an indexed format.  
+    vector<Vector3Df> positionData_;
+    vector<Vector3Df> diffuseColorData_;
+    vector<Vector3Df> normalData_;
+    vector<Vector2Df> texcoordData_;
+    vector<Vector3Df> tangentData_;
+    
+    // (wrapped) OpenGL program object
+    Shader* shader_;
+    GLResourceManager* gl_mgr_;
 
-  vector<Shader> shaders;
+    // OpenGL vertex array object
+    VertexArrayId vertexArrayId_;
 
-  std::vector<std::string> uniform_strings;
-  std::vector<float> uniform_values;
+    // OpenGL vertex buffer objects
+    VertexBufferId positionBufferId_;
+    VertexBufferId diffuseColorBufferId_;
+    VertexBufferId normalBufferId_;
+    VertexBufferId texcoordBufferId_;
+    VertexBufferId tangentBufferId_;
+    
+    // OpenGL texture objects
+    TextureId diffuseTextureId_;
+    TextureId normalTextureId_;
+    TextureId environmentTextureId_;
 
-  float glObj2World[16];
-  float glObj2WorldNorm[9];
-  float glObj2ShadowLight[SCENE_MAX_SHADOWED_LIGHTS][16];
-  
-  GLuint vertexBuffer;
-  GLuint diffuse_colorBuffer;
-  GLuint normalBuffer;
-  GLuint texcoordBuffer;
-  GLuint tangentBuffer;
-  
-  GLuint diffuseId;
-  GLuint diffuse_colorId;
-  GLuint normalId;
-  GLuint environmentId;
-  GLuint alphaId;
-  GLuint stub1Id;
-  GLuint stub2Id;
-  GLuint stub3Id;
+    // will be passed as shader uniforms
+    bool  doTextureMapping_;
+    bool  doNormalMapping_;
+    bool  doEnvironmentMapping_;
+    bool  useMirrorBrdf_;
+    float phongSpecExponent_;
 
-  bool simple_renderable;
-  bool simple_colors;
-  bool do_texture_mapping;
-  bool do_normal_mapping;
-  bool do_environment_mapping;
-  bool do_blending;
-  bool do_disney_brdf;
-  bool use_mirror_brdf;
-  float phong_spec_exp;
 };
 
 }  // namespace DynamicScene

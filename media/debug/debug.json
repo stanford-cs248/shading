@@ -1,0 +1,31 @@
+{
+	"camera" :
+	{
+		"id" : "Camera_001-camera",
+		"name" : "Camera.002",
+		"xfov" : 50,
+		"yfov" : 35,
+		"znear" : 0.1,
+		"zfar" : 10000.0,
+		"aspect_ratio" : 1.777778,
+		"up_axis" : "Y_UP",
+		"target_position" : [0, 0, 0],
+		"dir2cam" : [0, 1, 1]
+	},
+    "meshes" :
+	[
+
+		{
+			"filename" : "plane.obj",
+            "translate" : [0, 0, 0],
+            "material" : "phong",
+            "spec_exp" : 20.0,
+	    "texcoord_v_flip" : "true",
+            "texcoord_u_scale" : 4,
+            "texcoord_v_scale" : 4,
+			"vertex_shader_filename" : "../debug.vert",
+			"fragment_shader_filename" : "../debug.frag"
+		}
+        
+	]
+}

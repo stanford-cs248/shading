@@ -19,55 +19,56 @@ using namespace CS248;
 
 #define msg(s) cerr << "[Render] " << s << endl;
 
+
 void usage(const char* binaryName) {
-  printf("Usage: %s [options] <scenefile>\n", binaryName);
-  printf("Program Options:\n");
-  printf("  -h               Print this help message\n");
-  printf("\n");
+    printf("Usage: %s [options] <scenefile>\n", binaryName);
+    printf("Program Options:\n");
+    printf("  -h               Print this help message\n");
+    printf("\n");
 }
 
 int main(int argc, char** argv) {
-  if (1 >= argc) {
-    usage(argv[0]);
-    return 1;
-  }
 
-  string sceneFilePath = argv[1];
-  msg("Input scene file: " << sceneFilePath);
+    if (1 >= argc) {
+        usage(argv[0]);
+        return 1;
+    }
 
-  // parse scene
-  Collada::SceneInfo* sceneInfo = new Collada::SceneInfo();
-  if (Collada::ColladaParser::load(sceneFilePath.c_str(), sceneInfo) < 0) {
-    msg("Error: parsing failed!");
+    string sceneFilePath = argv[1];
+    msg("Input scene file: " << sceneFilePath);
+
+    // parse scene
+    Collada::SceneInfo* sceneInfo = new Collada::SceneInfo();
+    if (Collada::ColladaParser::load(sceneFilePath.c_str(), sceneInfo) < 0) {
+        msg("Error: parsing failed!");
+        delete sceneInfo;
+        return 1;
+      }
+
+    // create viewer
+    Viewer viewer = Viewer();
+
+    // create application
+    Application app;
+
+    // init viewer
+    viewer.init(&app);
+
+    // load scene.
+    // NOTE: This must come after the viewer.init() since loading
+    // the scene creates OGL assets (and the viewer.init() is where the OGL context is created)
+    app.load(sceneInfo);
+
     delete sceneInfo;
-    exit(0);
-  }
 
-  // create viewer
-  Viewer viewer = Viewer();
+    // start viewer
+    viewer.start();
 
-  // create application
-  Application app;
+    // TODO: FIXME
+    // apparently the meshEdit renderer instance was not destroyed properly
+    // not sure if this is due to the recent refactor but if anyone got some
+    // free time, check the destructor for Application.
+    exit(EXIT_SUCCESS);  // shamelessly faking it
 
-  // set renderer
-  viewer.set_renderer(&app);
-
-  // init viewer
-  viewer.init();
-
-  // load scene
-  app.load(sceneInfo);
-
-  delete sceneInfo;
-
-  // start viewer
-  viewer.start();
-
-  // TODO:
-  // apparently the meshEdit renderer instance was not destroyed properly
-  // not sure if this is due to the recent refactor but if anyone got some
-  // free time, check the destructor for Application.
-  exit(EXIT_SUCCESS);  // shamelessly faking it
-
-  return 0;
+    return 0;
 }

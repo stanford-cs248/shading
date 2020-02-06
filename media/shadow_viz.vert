@@ -1,9 +1,11 @@
+in vec4 vtx_position;
+in vec2 vtx_texcoord;
 
-varying vec2 vTexCoord;
+out vec2 vTexCoord;
 
 void main() {
-    vTexCoord = vec2(gl_MultiTexCoord0.x, gl_MultiTexCoord0.y); 
-	gl_Position = gl_Vertex;
+    vTexCoord = vtx_texcoord; 
+	gl_Position = vtx_position;
 }
 
 

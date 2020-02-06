@@ -1,5 +1,7 @@
 #include "light.h"
 
+#include "CS248/matrix4x4.h"
+#include "CS248/vector3D.h"
 #include <iostream>
 
 namespace CS248 {
@@ -36,6 +38,17 @@ SpotLight::SpotLight(const Spectrum& rad, const Vector3D& pos,
     position = pos;
     direction = dir;
     angle = cone_angle;
+}
+
+void SpotLight::rotate(float delta) {
+  // rotate around Y axis
+  Matrix4x4 r = Matrix4x4::rotation(delta, Matrix4x4::Axis::Y);
+  Vector3D newpos = r * position;
+  // Keep looking at the target on XZ plane.
+  Vector3D targetXZ = position - ((position.y / direction.y)*direction);
+  direction = targetXZ - newpos;
+  direction.normalize();
+  position = newpos;
 }
 
 // Area Light //

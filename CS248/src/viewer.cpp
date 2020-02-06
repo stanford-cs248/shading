@@ -18,6 +18,8 @@ using namespace chrono;
 
 namespace CS248 {
 
+void checkGLError(const std::string& str);
+
 // HDPI display
 bool Viewer::HDPI;
 
@@ -41,7 +43,6 @@ Renderer* Viewer::renderer;
 OSDText* Viewer::osd_text;
 int Viewer::line_id_renderer;
 int Viewer::line_id_framerate;
-int Viewer::line_id_pattern;
 
 // Error dialogs
 bool Viewer::showingError = false;
@@ -58,94 +59,96 @@ Viewer::~Viewer() {
   glfwDestroyWindow(window);
   glfwTerminate();
   
-  // free resources
-  delete renderer;
   delete osd_text;
 }
 
 
-void Viewer::init() {
+void Viewer::init(Renderer *rend) {
 
-  // initialize glfw
-  glfwSetErrorCallback( err_callback );
-  if( !glfwInit() ) {
-    out_err("Error: could not initialize GLFW!");
-    exit( 1 );
-  }
+    renderer = rend;
 
-  // create window
-  string title = renderer ? "CS248: " + renderer->name() : "CS248";
-  window = glfwCreateWindow( DEFAULT_W, DEFAULT_H, title.c_str(), NULL, NULL );
-  if (!window) {
-    out_err("Error: could not create window!");
-    glfwTerminate();
-    exit( 1 );
-  }
+    // initialize glfw
+    glfwSetErrorCallback( err_callback );
+    if (!glfwInit()) {
+        out_err("Error: could not initialize GLFW!");
+        exit( 1 );
+    }
 
-  // set context
-  glfwMakeContextCurrent( window );
-  glfwSwapInterval(1);
+    // These lines are needed to get most up to date version of OGL on OSX
+    // Source: https://stackoverflow.com/questions/19865463/opengl-4-1-under-mavericks
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 2);
+#endif
+    
+    // create window
+    string title = renderer ? "CS248: " + renderer->name() : "CS248";
+    window = glfwCreateWindow( DEFAULT_W, DEFAULT_H, title.c_str(), NULL, NULL );
+    if (!window) {
+        out_err("Error: could not create window!");
+        glfwTerminate();
+        exit(1);
+    }
 
-  // framebuffer event callbacks
-  glfwSetFramebufferSizeCallback( window, resize_callback );
-  
-  // key event callbacks
-  glfwSetKeyCallback( window, key_callback );
+    // set context
+    glfwMakeContextCurrent( window );
+    glfwSwapInterval(1);
 
-  // character event callbacks
-  glfwSetCharCallback( window, char_callback );
-  
-  // cursor event callbacks
-  glfwSetCursorPosCallback( window, cursor_callback );
+    // framebuffer event callbacks
+    glfwSetFramebufferSizeCallback( window, resize_callback );
+    
+    // key event callbacks
+    glfwSetKeyCallback( window, key_callback );
 
-  // wheel event callbacks
-  glfwSetScrollCallback(window, scroll_callback);  
-  
-  // mouse button callbacks
-  glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
-  glfwSetMouseButtonCallback(window, mouse_button_callback);
+    // character event callbacks
+    glfwSetCharCallback( window, char_callback );
+    
+    // cursor event callbacks
+    glfwSetCursorPosCallback( window, cursor_callback );
 
-  glewExperimental = GL_TRUE; 
-		
-  // initialize glew
-  if (glewInit() != GLEW_OK) {
-    out_err("Error: could not initialize GLEW!");
-    glfwTerminate();
-    exit( 1 );
-  }
+    // wheel event callbacks
+    glfwSetScrollCallback(window, scroll_callback);  
+    
+    // mouse button callbacks
+    glfwSetInputMode(window, GLFW_STICKY_MOUSE_BUTTONS, 1);
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
 
-  // enable alpha blending
-  glEnable(GL_BLEND);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glewExperimental = GL_TRUE; 
+  		
+    // initialize glew
+    if (glewInit() != GLEW_OK) {
+        out_err("Error: could not initialize GLEW!");
+        glfwTerminate();
+        exit(1);
+    }
 
-  // resize components to current window size, get DPI
-  glfwGetFramebufferSize(window, (int*) &buffer_w, (int*) &buffer_h );
-  if( buffer_w > DEFAULT_W ) HDPI = true;
+    // resize components to current window size, get DPI
+    glfwGetFramebufferSize(window, (int*) &buffer_w, (int*) &buffer_h );
+    if (buffer_w > DEFAULT_W)
+        HDPI = true;
 
-  // initialize renderer if already set
-  if (renderer){
-    if (HDPI) renderer->use_hdpi_reneder_target();
-    renderer->init();
-  } 
+    // initialize renderer if already set
+    if (renderer) {
+        if (HDPI)
+            renderer->use_hdpi_render_target();
+        renderer->init();
+    } 
 
-  // initialize status OSD
-  osd_text = new OSDText();
-  if (osd_text->init(HDPI) < 0) {
-    out_err("Error: could not initialize on-screen display!");
-    exit( 1 );
-  }
-  
-  // add lines for renderer and fps
-  line_id_renderer  = osd_text->add_line(-0.95,  0.90, "Renderer", 
-                                          18, Color(0.15, 0.5, 0.15));
-  line_id_framerate = osd_text->add_line(-0.98, -0.96, "Framerate", 
-                                          14, Color(0.15, 0.5, 0.15));
-  line_id_pattern  = osd_text->add_line(-0.90,  0.80, "", 
-                                          18, Color(0.15, 0.5, 0.15));
- 
-  // resize elements to current size
-  resize_callback(window, buffer_w, buffer_h);
+    // initialize status OSD
+    osd_text = new OSDText();
+    if (osd_text->init(HDPI) < 0) {
+        out_err("Error: could not initialize ODS test renderer!");
+        exit(1);
+    }
 
+    // add lines for renderer and fps
+    line_id_renderer  = osd_text->add_line(-0.95,  0.90, "Renderer", 18, Color(0.15, 0.5, 0.15));
+    line_id_framerate = osd_text->add_line(-0.98, -0.96, "Framerate", 14, Color(0.15, 0.5, 0.15));
+   
+    // resize elements to current size
+    resize_callback(window, buffer_w, buffer_h);
 }
 
 void Viewer::start() {
@@ -159,10 +162,6 @@ void Viewer::start() {
   }
 }
 
-void Viewer::set_renderer(Renderer *renderer) {
-  this->renderer = renderer;
-}
-
 void Viewer::update() {
 
   // clear frame
@@ -173,17 +172,29 @@ void Viewer::update() {
     renderer->render();
   }
 
+  checkGLError("post render");
+
+  // FIXME(kayvonf): commented out for now since it was throwing GL errors
+
   // draw info
-  if( showInfo ) {
-    drawInfo();
-  } 
+  if (showInfo) {
+   drawInfo();
+  }
+
+  checkGLError("post drawInfo");
+
   drawError();
+
+  checkGLError("post drawError");
 
   // swap buffers
   glfwSwapBuffers(window); 
 
   // poll events
   glfwPollEvents();
+
+  checkGLError("end of Viewer::update");
+
 }
 
 // Displays an error to the user, does not return until the user clicks
@@ -247,15 +258,6 @@ void Viewer::drawInfo() {
     osd_text->set_text(line_id_renderer, renderer_info);
   }
 
-  if (renderer) {
-    string pattern_info = renderer->pattern_info();
-    osd_text->set_text(line_id_pattern, pattern_info);
-  } else {
-    string pattern_info = "No input pattern";
-    osd_text->set_text(line_id_pattern, pattern_info);
-  }
-
-
   // render OSD
   osd_text->render();
 
@@ -263,10 +265,12 @@ void Viewer::drawInfo() {
 
 void Viewer::drawError() {
 
-    if(!showingError) {
+    if( !showingError) {
         return;
     }
    
+    printf("Showing Error! *******************\n");
+
     // GL prep
     // Note: This was copied in, I think it's a bit overkill
     glPushAttrib(GL_VIEWPORT_BIT);
