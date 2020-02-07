@@ -159,6 +159,8 @@ With a correct implementation of normal mapping the scene will look like this:
 
 ![Spheres with normal mapping](misc/step3.png?raw=true)
 
+__Note: After getting part 3 working, this is a good time to stop and take a look at some of the details of the implementation of `gl_resource_manager.cpp` to see the behind the curtain details of how texture objects are created using OpenGL and how parameters are bound to the GL pipeline.__
+
 ### Part 4: Adding Environment Lighting
 
 So far, your shaders have used simple point and directional light sources in the scene. (Notice that in `shader.frag` the code iterated over light sources and accumulated reflectance.)  We'd now like you to implement a more complex form of light source.  This light source, called an image based environment light, described [here in lecture](http://cs248.stanford.edu/winter19/lecture/materials/slide_037) represents light incoming on the scene from an _infinitely far source, but from all directions_.  Pixel (x,y) in the texture map encodes the magnitude and color and light from the direction (phi, theta).  Phi and theta encode a direction in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
@@ -167,9 +169,9 @@ __What you need to do:__
 
 In `media/shader.frag`, we'd like you to implement a perfectly mirror reflective surface.  The shader should [reflect the vector](http://cs248.stanford.edu/winter19/lecture/materials/slide_051) from the surface to the camera about the surface normal, and the use the reflected vector to perform a lookup in the environment map.  A few notes are below:
 
-* The environment map is not yet passed into the shader. Similar to what you did in normal mapping, you need to bind the texture with handle `environmentTextureId_` to a texture sampler in `shader.frag` in `Mesh::internalDraw` to make it available to the shader.
-* `dir2camera` conveniently gives you the direction from the surface _to the camera_.  It is not normalized.
-* The function `vec3 SampleEnvironmentMap(vec3 L)` takes as input a direction (outward from the scene), and returns the radiance from the environment light arriving from this direction (this is lightarriving at the surface from an infinitely far light source from the direction -L).
+* Just like with normal mapping, the environment map is not yet passed into the shader. Similar to what you did in normal mapping, you need to bind the environment texture map with handle `environmentTextureId_` to a texture sampler parameter in `shader.frag`.  Recall this is done by making edits to `Mesh::internalDraw` and adding an additional sampler variable to the fragment shader.
+* `dir2camera` in `shader.frag` conveniently gives you the world space direction from the fragment's surface point _to the camera_.  It is not normalized.
+* The function `vec3 SampleEnvironmentMap(vec3 L)` takes as input a direction (outward from the scene), and returns the radiance from the environment light arriving from this direction (this is light arriving at the surface from an infinitely far light source from the direction -L).
 * To perform an environment map lookup, you have to convert the reflection direction from its 3D Euclidean representation to spherical coordinates phi and theta.  In this assignment rendering is set up to use a a right-handed coordinate system (where Y is up, X is pointing to the right, and Z is pointing toward the camera), so you'll need to adjust the standard equations of converting from XYZ to spherical coordinates accordingly.  Specifically, in this assignment, the polar (or zenith) angle __theta__ is the angle between the direction and the Y axis.  The azimuthal angle __phi__ is zero when the direction vector is in the YZ plane, and increases as this vector rotates toward the XY plane. 
 
 Once you've correctly implemented an environment map lookups, the rightmost sphere will look as if it's a perfect mirror.
@@ -182,7 +184,7 @@ You'll also be able to render a reflective teapot (`media/teapot/teapot.json`), 
 
 ### Part 5: Adding Spotlights and Shadows
 
-In the final part of this assignment you will implement a more advanced type of light source, a spotlight, as well as use shadow mapping with percentage closer filtering (PCF) to compute smooth shadows for your spotlights.  These more advanced lighting conditions will significantly improve the realism of your rendering.  When you are done with this part of the assignment, you will be able to render the scene `media/spheres/spheres_shadow.json` to get a rendering like this:
+In the final part of this assignment you will implement a more advanced type of light source, a spotlight, as well as use shadow mapping to compute smooth shadows for your spotlights.  These more advanced lighting conditions will significantly improve the realism of your rendering.  When you are done with this part of the assignment, you will be able to render the scene `media/spheres/spheres_shadow.json` to get a rendering like this:
 
 ![Nice shadowed spotlights](misc/shadow_final.png?raw=true)
 
@@ -214,21 +216,21 @@ Now you will improve your spotlights so they cast shadows.  In class we discusse
 
 __What to do in C++ client code:__
 
-We have set up a new framebuffer for each spotlight to render its shadow pass, their handles are stored in `shadowFrameBufferId_`.
-In `Scene::renderShadowPass`, you need to bind GL to the correct framebuffer as its render target for the render pass.
-You also need to compute the correct view and projection matrix for the shadow pass rendering. You can look at `Scene::render` for how that is set-up for the final rendering with the real camera.
+We have created a seperate framebuffer for each spotlight. For each light the C++ code will render the scene from the perspective of the light into this framebuffer. (This is often called a "shadow map generation pass", or a "shadow pass".  The term "pass" is jargon that refers to a pass over all the scene geometry when rendering.) Handles for these per shadow map framebuffers are stored in `shadowFrameBufferId_`.
+In `Scene::renderShadowPass`, you need to configure OpenGL to render to the correct framebuffer when performing shadow map generation passes.
+You also need to compute the correct view and perspective projection matrix for the shadow pass rendering. You might want to look at `Scene::render` for an example of how view and perspective projection matrices are set-up for the final rendering from the perspective of the real scene camera.
 Finally, you need to compute and store a `worldToShadowLight` matrix for every light that goes from world space to "light space". More details are in the starter code.
 
-However, you might be wondering what is the definition of the "light space"?  It is a coordinate space where the virtual camera is at the position of the spotlight, looking directly in the spotlight's direction, and after applying perspective projection.  You need to adjust the transform so that *after homogeneous divide* vertices that fall on screen during shadow map rendering are in the [0,1]^2 range and valid scene depths between the near and far clipping planes are in the [0-1] range.  You encourage you to read more about the [coordinate systems of shadow mapping here](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping).
+You might be wondering what is the definition of the "light space"?  It is a coordinate space where the virtual camera is at the position of the spotlight, looking directly in the direction of the spotlight, and after applying perspective projection.  You need to adjust the transform so that *after homogeneous divide* vertices that fall on screen during shadow map rendering are in the [0,1]^2 range and valid scene depths between the near and far clipping planes are in the [0-1] range.  You encourage you to read more about the [coordinate systems of shadow mapping here](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping).
 
 We have set-up the shadow textures as an [Array Texture](https://www.khronos.org/opengl/wiki/Array_Texture) that connects to the shadow-pass frame buffers.
-Once you have set-up the client code correctly, you should be able to visualize a depth map by pressing 'v'.
+Once you have set-up the client code correctly, you should be able to visualize the depth map (for the first spotlight) that you generate from your shadow pass pressing 'v'.
 
 ![Depth Map](misc/depth_map.png?raw=true)
 
-The last step in the client code is to pass the array texture to the shader in `Mesh::internalDraw`, as you have done twice now with normal map and environment map.
-For Array Textures the syntax is a little different. Look in `Scene::visualizeShadowMap` and `media/shadow_viz.frag` to see how to use it.
-In `Mesh::internalDraw`, you also need to pass an array of matrices from object space to each "light space" to the shader. See starter code for details.
+The last step in the client code is to pass the array texture that is __written to__ during the shadow map generation passes as an input texture to the fragment shader (for sampling from) that is used in the final render pass that actually renders the scene. (Recall these bindings are set up in `Mesh::internalDraw`, as you have done twice now with normal map and environment map.)
+Sampling from Array Textures in the GLSL fragment shader requires a slightly different syntax. Look in `Scene::visualizeShadowMap` and `media/shadow_viz.frag` to see how to use it.
+In `Mesh::internalDraw`, you also need to pass your shaders an array of matrices representing object space to "light space" transforms for all shadowed lights. See starter code for details.
 
    
 __What to do in the vertex shader:__
@@ -250,7 +252,7 @@ At this point, you may notice errors in your image.  Read about the phenomenon o
 
 ![Hard shadows](misc/shadows_hard.png?raw=true)
 
-As you move the camera and look at the scene from different viewpoints, you might observe aliasing (jaggies) at the edges of your shadows.  One way to approximate a smoother shadow boundary is to take multiple samples of the shadow map around a desired sample point, and then compute the fraction of samples that pass the test.  This technique, which is quite costly because it requires making multiple texture lookups (a form of supersampling), is called __percentage closure filtering__. Inuitively, by perturbing the location of the shadow map lookup, PCF is trying to determine how close to a shadow boundary the current surface point is. Points slower to the boundary are considered to be partially occluded, and the result is a smoother gradation of intensity near the shadow boundary. The basic pseudocode for a 25-sample implementation of PCF is:
+As you move the camera and look at the scene from different viewpoints, you might observe aliasing (jaggies) at the edges of your shadows.  One way to approximate a smoother shadow boundary is to take multiple samples of the shadow map around a desired sample point, and then compute the fraction of samples that pass the test.  This technique, which is quite costly because it requires making multiple texture lookups (a form of supersampling), is called __percentage closure filtering (PCF)__. Inuitively, by perturbing the location of the shadow map lookup, PCF is trying to determine how close to a shadow boundary the current surface point is. Points slower to the boundary are considered to be partially occluded, and the result is a smoother gradation of intensity near the shadow boundary. The basic pseudocode for a 25-sample implementation of PCF is:
 
 ~~~~
 float pcf_step_size = 256;
