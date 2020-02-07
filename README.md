@@ -81,11 +81,11 @@ We didn't specifically talk about the specifics of GLSL programming in class, so
 
 * You'll want to start by looking at `main()` in both `shader.vert` and `shader.frag`.  This is the function that executes once per vertex or once per fragment.
 
-* Make sure you understand the difference between __uniform parameters__ to a shader, which are read-only variables that take on the same value for all invocations of a shader, and __varying values__ that assume different values for each invocation.  Per-vertex input attributes are inputs to the vertex shader that have a unique value per vertex (such as position, normal, texcoord, etc.).  The vertex's shader's outputs are interpolated by the rasterizer, and then the interpolated values are provided as inputs to the fragment shader when it is invoked for a specific surface point.  Notice how the name of the vertex shader's output variables matches the name of the fragment shader's varying input variables.
+* Make sure you understand the difference between __uniform parameters__ to a shader, which are read-only variables that take on the same value for all invocations of a shader, and __varying values__ that assume different values for each invocation.  Per-vertex input attributes (parameters declared with the `in` type qualifier) are inputs to the vertex shader that have a unique value per vertex (such as position, normal, texcoord, etc.).  The vertex's shader's varying outputs (`out` type qualifier) are interpolated by the rasterizer, and then the interpolated values are provided as inputs (with the `in` qualifier) to the fragment shader when it is invoked for a specific surface point.  Notice how the name of the vertex shader's output variables matches the name of the fragment shader's varying input variables.
 
-* The assignment starter code JIT compiles your GLSL vertex and fragment shaders on-the-fly when the `render` application starts running.  Therefore, you won't know if the code successfully compiles until run time.  If you see a black screen while rendering, it's likely because your GLSL shader failed to compile.  __Look to your console for error messages about a failed compile.__
+* The assignment starter code "just-in-time" (JIT) compiles your GLSL vertex and fragment shaders on-the-fly when the `render` application starts running.  Therefore, you won't know if the code successfully compiles until run time.  If you see a black screen while rendering, it's likely because your GLSL shader failed to compile.  __Look to your console for error messages about a failed compile.__
 
-The client C++ code that talks to GL can be quite complicated. Luckily for this assignment, we have abstracted away the messy state-setting to a couple of relatively simple APIs in GLResourceManager and Shader classes that work for this particular assignment. Look at their header files as well as the example calls in the starter code to see how they can be used. For the adventurous, we encourage you to look at the implementations of these two classes to get a sense on how to use OpenGL in a C++ client, since extra-credit or final project extensions of this assignment likely need to delve deeper.
+The client C++ code that makes OpenGL library commands can be quite complicated. Luckily for this assignment, we have abstracted away the messy details of using the OpenGL libreary to a couple of relatively simple APIs in the `GLResourceManager` and `Shader` classes. You will need to look at their header files as well as the example calls in the starter code to see how they can be used. For the adventurous, we encourage you to look at the implementations of these two classes to get a sense on how to use OpenGL, since extra-credit or final project extensions of this assignment likely need to delve deeper.
 
 ### Part 1: Coordinate transform
 In the first part of this assignment you will enable interactive inspection of the scene by deriving the correct transformation matrix from world space to camera space.
@@ -97,17 +97,16 @@ You should see an image that looks a bit like the one below:
 
 ![Spheres starter image](misc/step0.png?raw=true)
 
-__IMPORTANT__: If you see a black screen it means your GL environment is not working correctly. Please reach out to course staff for help on getting it set up! Be prepared to provide the console error logs.
+__IMPORTANT__: If you see a black screen it means your GL environment is not working correctly. Please reach out to course staff for help on getting it set up! Be prepared to provide us with the console error logs.
 
 __What you need to do:__
 
-Notice that mouse scroll, left/right click-drag does nothing. This is because the world2cam transformation matrix is stubbed out in `Scene::createWorldToCameraMatrix`.
+Notice that when you run `render`, mouse controls like scrolling to rotate the camera or, left/right click-drag do nothing. This is because the starter code does not correctly implement the world space-to-camera space transformation. See the `world2cam` transformation matrix that is stubbed out in `Scene::createWorldToCameraMatrix`.
 Your task is to derive the correct matrix to enable interactive inspection of the scene.
 
 A correct implementation will yield the following view, and allow interactive inspection with the mouse!
 
 ![Correct World2Cam Transform](misc/step1.png?raw=true)
-
 
 ### Part 2: Implementing Phong Reflectance
 
@@ -120,6 +119,8 @@ Notice that the scene is rendered with a texture map on the ground plane and two
 A correct implementation of Phong reflectance should yield shaded spheres, which should look like this.
 
 ![Spheres with phong](misc/step2.png?raw=true)
+
+__NOTE: You can press the `S` key at any type when running the `render` application to "hot reload" your vertex and fragment shaders.. You do not need to quit the program to see changes to a shader! Yes, you can thank the staff later. ;-)__
 
 ### Part 3: Normal mapping
 
@@ -139,10 +140,16 @@ First, modify the vertex shader `shader.vert` to compute a transform `tan2World`
 * How do you create a rotation matrix that takes tangent space vectors to object space vector?  [See this slide](http://cs248.stanford.edu/winter19/lecture/transforms/slide_049) for a hint.
 
 Second, in `shader.frag`, you need to sample the normal map, and then use `tan2World` to compute a world space normal at the current surface sample point.
-However, the normal map is not yet passed into the shader. You need to first create the binding in C++ in `Mesh::internalDraw` in `mesh.cpp` so that the shader have access to the normal map.
-Specifically, the normal map is handled as texture and we have already prepared the texture in GL in `Mesh::Mesh` and have saved a handle to the prepared texture as `normalTextureId_`.
-You should follow the example of `diffuseTextureSampler` to declare a texture sampler in `shader.frag` and bind the prepared texture to that using the handle `normalTextureId_`.
-After successfully passing the normal map to the fragment shader, you can modify `shader.frag` to sample it and compute the correct normal.
+However, in the starter code, the normal map is not yet passed into the shader by the application.  There are two steps that you need to perform to do this. First, you will need to modify the C++ code (the "caller") to pass a texture object to the fragment shader (the callee).  Second, you'll need to declare a new uniform input variable in the shader.
+
+To implement the first step, take a look at the code in `Mesh::internalDraw` in `mesh.cpp`.  This is the C++ that makes OpenGL commands to draw the mesh.   Notice all the `shader_->set*` calls at the top of this function.  These calls pass arguments to the shader.  (In OpenGL terminology, they are "binding" parameters like uniform variables and textures to the shader program.)
+
+Take a look at how the C++ starter code binds the diffuse color texture object to the shader. (Look for this line):
+
+    if (doTextureMapping_)
+        shader_->setTextureSampler("diffuseTextureSampler", diffuseTextureId_);
+
+You'll need to extend the code to also bind the normal map texture (given by `normalTextureId_`) to the shader. Follow the example of `diffuseTextureSampler` to declare a corresponding texture sampler parameter in `shader.frag` and bind the prepared texture to that using the handle `normalTextureId_`.  After successfully passing the normal map to the fragment shader, you can modify `shader.frag` to sample it and compute the correct normal.
 
 We recommend that you debug normal mapping on the sphere scene (`media/spheres/spheres.json`).  
 
@@ -152,6 +159,8 @@ With a correct implementation of normal mapping the scene will look like this:
 
 ![Spheres with normal mapping](misc/step3.png?raw=true)
 
+__Note: After getting part 3 working, this is a good time to stop and take a look at some of the details of the implementation of `gl_resource_manager.cpp` to see the behind the curtain details of how texture objects are created using OpenGL and how parameters are bound to the GL pipeline.__
+
 ### Part 4: Adding Environment Lighting
 
 So far, your shaders have used simple point and directional light sources in the scene. (Notice that in `shader.frag` the code iterated over light sources and accumulated reflectance.)  We'd now like you to implement a more complex form of light source.  This light source, called an image based environment light, described [here in lecture](http://cs248.stanford.edu/winter19/lecture/materials/slide_037) represents light incoming on the scene from an _infinitely far source, but from all directions_.  Pixel (x,y) in the texture map encodes the magnitude and color and light from the direction (phi, theta).  Phi and theta encode a direction in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
@@ -160,9 +169,9 @@ __What you need to do:__
 
 In `media/shader.frag`, we'd like you to implement a perfectly mirror reflective surface.  The shader should [reflect the vector](http://cs248.stanford.edu/winter19/lecture/materials/slide_051) from the surface to the camera about the surface normal, and the use the reflected vector to perform a lookup in the environment map.  A few notes are below:
 
-* The environment map is not yet passed into the shader. Similar to what you did in normal mapping, you need to bind the texture with handle `environmentTextureId_` to a texture sampler in `shader.frag` in `Mesh::internalDraw` to make it available to the shader.
-* `dir2camera` conveniently gives you the direction from the surface _to the camera_.  It is not normalized.
-* The function `vec3 SampleEnvironmentMap(vec3 L)` takes as input a direction (outward from the scene), and returns the radiance from the environment light arriving from this direction (this is lightarriving at the surface from an infinitely far light source from the direction -L).
+* Just like with normal mapping, the environment map is not yet passed into the shader. Similar to what you did in normal mapping, you need to bind the environment texture map with handle `environmentTextureId_` to a texture sampler parameter in `shader.frag`.  Recall this is done by making edits to `Mesh::internalDraw` and adding an additional sampler variable to the fragment shader.
+* `dir2camera` in `shader.frag` conveniently gives you the world space direction from the fragment's surface point _to the camera_.  It is not normalized.
+* The function `vec3 SampleEnvironmentMap(vec3 L)` takes as input a direction (outward from the scene), and returns the radiance from the environment light arriving from this direction (this is light arriving at the surface from an infinitely far light source from the direction -L).
 * To perform an environment map lookup, you have to convert the reflection direction from its 3D Euclidean representation to spherical coordinates phi and theta.  In this assignment rendering is set up to use a a right-handed coordinate system (where Y is up, X is pointing to the right, and Z is pointing toward the camera), so you'll need to adjust the standard equations of converting from XYZ to spherical coordinates accordingly.  Specifically, in this assignment, the polar (or zenith) angle __theta__ is the angle between the direction and the Y axis.  The azimuthal angle __phi__ is zero when the direction vector is in the YZ plane, and increases as this vector rotates toward the XY plane. 
 
 Once you've correctly implemented an environment map lookups, the rightmost sphere will look as if it's a perfect mirror.
@@ -175,7 +184,7 @@ You'll also be able to render a reflective teapot (`media/teapot/teapot.json`), 
 
 ### Part 5: Adding Spotlights and Shadows
 
-In the final part of this assignment you will implement a more advanced type of light source, a spotlight, as well as use shadow mapping with percentage closer filtering (PCF) to compute smooth shadows for your spotlights.  These more advanced lighting conditions will significantly improve the realism of your rendering.  When you are done with this part of the assignment, you will be able to render the scene `media/spheres/spheres_shadow.json` to get a rendering like this:
+In the final part of this assignment you will implement a more advanced type of light source, a spotlight, as well as use shadow mapping to compute smooth shadows for your spotlights.  These more advanced lighting conditions will significantly improve the realism of your rendering.  When you are done with this part of the assignment, you will be able to render the scene `media/spheres/spheres_shadow.json` to get a rendering like this:
 
 ![Nice shadowed spotlights](misc/shadow_final.png?raw=true)
 
@@ -207,21 +216,21 @@ Now you will improve your spotlights so they cast shadows.  In class we discusse
 
 __What to do in C++ client code:__
 
-We have set up a new framebuffer for each spotlight to render its shadow pass, their handles are stored in `shadowFrameBufferId_`.
-In `Scene::renderShadowPass`, you need to bind GL to the correct framebuffer as its render target for the render pass.
-You also need to compute the correct view and projection matrix for the shadow pass rendering. You can look at `Scene::render` for how that is set-up for the final rendering with the real camera.
+We have created a seperate framebuffer for each spotlight. For each light the C++ code will render the scene from the perspective of the light into this framebuffer. (This is often called a "shadow map generation pass", or a "shadow pass".  The term "pass" is jargon that refers to a pass over all the scene geometry when rendering.) Handles for these per shadow map framebuffers are stored in `shadowFrameBufferId_`.
+In `Scene::renderShadowPass`, you need to configure OpenGL to render to the correct framebuffer when performing shadow map generation passes.
+You also need to compute the correct view and perspective projection matrix for the shadow pass rendering. You might want to look at `Scene::render` for an example of how view and perspective projection matrices are set-up for the final rendering from the perspective of the real scene camera.
 Finally, you need to compute and store a `worldToShadowLight` matrix for every light that goes from world space to "light space". More details are in the starter code.
 
-However, you might be wondering what is the definition of the "light space"?  It is a coordinate space where the virtual camera is at the position of the spotlight, looking directly in the spotlight's direction, and after applying perspective projection.  You need to adjust the transform so that *after homogeneous divide* vertices that fall on screen during shadow map rendering are in the [0,1]^2 range and valid scene depths between the near and far clipping planes are in the [0-1] range.  You encourage you to read more about the [coordinate systems of shadow mapping here](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping).
+You might be wondering what is the definition of the "light space"?  It is a coordinate space where the virtual camera is at the position of the spotlight, looking directly in the direction of the spotlight, and after applying perspective projection.  You need to adjust the transform so that *after homogeneous divide* vertices that fall on screen during shadow map rendering are in the [0,1]^2 range and valid scene depths between the near and far clipping planes are in the [0-1] range.  You encourage you to read more about the [coordinate systems of shadow mapping here](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping).
 
 We have set-up the shadow textures as an [Array Texture](https://www.khronos.org/opengl/wiki/Array_Texture) that connects to the shadow-pass frame buffers.
-Once you have set-up the client code correctly, you should be able to visualize a depth map by pressing 'v'.
+Once you have set-up the client code correctly, you should be able to visualize the depth map (for the first spotlight) that you generate from your shadow pass pressing 'v'.
 
 ![Depth Map](misc/depth_map.png?raw=true)
 
-The last step in the client code is to pass the array texture to the shader in `Mesh::internalDraw`, as you have done twice now with normal map and environment map.
-For Array Textures the syntax is a little different. Look in `Scene::visualizeShadowMap` and `media/shadow_viz.frag` to see how to use it.
-In `Mesh::internalDraw`, you also need to pass an array of matrices from object space to each "light space" to the shader. See starter code for details.
+The last step in the client code is to pass the array texture that is __written to__ during the shadow map generation passes as an input texture to the fragment shader (for sampling from) that is used in the final render pass that actually renders the scene. (Recall these bindings are set up in `Mesh::internalDraw`, as you have done twice now with normal map and environment map.)
+Sampling from Array Textures in the GLSL fragment shader requires a slightly different syntax. Look in `Scene::visualizeShadowMap` and `media/shadow_viz.frag` to see how to use it.
+In `Mesh::internalDraw`, you also need to pass your shaders an array of matrices representing object space to "light space" transforms for all shadowed lights. See starter code for details.
 
    
 __What to do in the vertex shader:__
@@ -243,7 +252,7 @@ At this point, you may notice errors in your image.  Read about the phenomenon o
 
 ![Hard shadows](misc/shadows_hard.png?raw=true)
 
-As you move the camera and look at the scene from different viewpoints, you might observe aliasing (jaggies) at the edges of your shadows.  One way to approximate a smoother shadow boundary is to take multiple samples of the shadow map around a desired sample point, and then compute the fraction of samples that pass the test.  This technique, which is quite costly because it requires making multiple texture lookups (a form of supersampling), is called __percentage closure filtering__. Inuitively, by perturbing the location of the shadow map lookup, PCF is trying to determine how close to a shadow boundary the current surface point is. Points slower to the boundary are considered to be partially occluded, and the result is a smoother gradation of intensity near the shadow boundary. The basic pseudocode for a 25-sample implementation of PCF is:
+As you move the camera and look at the scene from different viewpoints, you might observe aliasing (jaggies) at the edges of your shadows.  One way to approximate a smoother shadow boundary is to take multiple samples of the shadow map around a desired sample point, and then compute the fraction of samples that pass the test.  This technique, which is quite costly because it requires making multiple texture lookups (a form of supersampling), is called __percentage closure filtering (PCF)__. Inuitively, by perturbing the location of the shadow map lookup, PCF is trying to determine how close to a shadow boundary the current surface point is. Points slower to the boundary are considered to be partially occluded, and the result is a smoother gradation of intensity near the shadow boundary. The basic pseudocode for a 25-sample implementation of PCF is:
 
 ~~~~
 float pcf_step_size = 256;
