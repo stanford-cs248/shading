@@ -168,6 +168,7 @@ class OSDText {
 
   // GL stuff
   GLuint vbo;
+  GLuint vertexAttribArray;
   GLuint program;
   GLint attribute_coord;
   GLint uniform_tex;

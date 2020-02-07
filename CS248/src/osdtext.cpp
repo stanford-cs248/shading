@@ -79,6 +79,9 @@ int OSDText::init(bool use_hdpi) {
     // create the vbo
     glGenBuffers(1, &vbo);
 
+    // vertex array
+    glGenVertexArrays(1, &vertexAttribArray);
+
     return 0;
 }
 
@@ -187,6 +190,7 @@ void OSDText::set_color(int line_id, Color color) {
 }
 
 void OSDText::draw_line(OSDLine line) {
+
   // set font size
   FT_Set_Pixel_Sizes(*face, 0, line.size);
 
@@ -216,9 +220,10 @@ void OSDText::draw_line(OSDLine line) {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
   // set up the VBO for our vertex data
-  glEnableVertexAttribArray(attribute_coord);
+  glBindVertexArray(vertexAttribArray);
   glBindBuffer(GL_ARRAY_BUFFER, vbo);
   glVertexAttribPointer(attribute_coord, 4, GL_FLOAT, GL_FALSE, 0, 0);
+  glEnableVertexAttribArray(attribute_coord);
 
   // loop through all characters
   const char* text = line.text.c_str();
@@ -246,7 +251,7 @@ void OSDText::draw_line(OSDLine line) {
     };
 
     // draw the character to screen
-    glBufferData(GL_ARRAY_BUFFER, sizeof box, box, GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(box), box, GL_DYNAMIC_DRAW);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     // Advance the cursor to the start of the next character
@@ -256,6 +261,7 @@ void OSDText::draw_line(OSDLine line) {
 
   glDisableVertexAttribArray(attribute_coord);
   glDeleteTextures(1, &tex);
+  glBindVertexArray(0);
 }
 
 GLuint OSDText::compile_shaders() {
