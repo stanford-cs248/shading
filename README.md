@@ -81,11 +81,11 @@ We didn't specifically talk about the specifics of GLSL programming in class, so
 
 * You'll want to start by looking at `main()` in both `shader.vert` and `shader.frag`.  This is the function that executes once per vertex or once per fragment.
 
-* Make sure you understand the difference between __uniform parameters__ to a shader, which are read-only variables that take on the same value for all invocations of a shader, and __varying values__ that assume different values for each invocation.  Per-vertex input attributes are inputs to the vertex shader that have a unique value per vertex (such as position, normal, texcoord, etc.).  The vertex's shader's outputs are interpolated by the rasterizer, and then the interpolated values are provided as inputs to the fragment shader when it is invoked for a specific surface point.  Notice how the name of the vertex shader's output variables matches the name of the fragment shader's varying input variables.
+* Make sure you understand the difference between __uniform parameters__ to a shader, which are read-only variables that take on the same value for all invocations of a shader, and __varying values__ that assume different values for each invocation.  Per-vertex input attributes (parameters declared with the `in` type qualifier) are inputs to the vertex shader that have a unique value per vertex (such as position, normal, texcoord, etc.).  The vertex's shader's varying outputs (`out` type qualifier) are interpolated by the rasterizer, and then the interpolated values are provided as inputs (with the `in` qualifier) to the fragment shader when it is invoked for a specific surface point.  Notice how the name of the vertex shader's output variables matches the name of the fragment shader's varying input variables.
 
-* The assignment starter code JIT compiles your GLSL vertex and fragment shaders on-the-fly when the `render` application starts running.  Therefore, you won't know if the code successfully compiles until run time.  If you see a black screen while rendering, it's likely because your GLSL shader failed to compile.  __Look to your console for error messages about a failed compile.__
+* The assignment starter code "just-in-time" (JIT) compiles your GLSL vertex and fragment shaders on-the-fly when the `render` application starts running.  Therefore, you won't know if the code successfully compiles until run time.  If you see a black screen while rendering, it's likely because your GLSL shader failed to compile.  __Look to your console for error messages about a failed compile.__
 
-The client C++ code that talks to GL can be quite complicated. Luckily for this assignment, we have abstracted away the messy state-setting to a couple of relatively simple APIs in GLResourceManager and Shader classes that work for this particular assignment. Look at their header files as well as the example calls in the starter code to see how they can be used. For the adventurous, we encourage you to look at the implementations of these two classes to get a sense on how to use OpenGL in a C++ client, since extra-credit or final project extensions of this assignment likely need to delve deeper.
+The client C++ code that makes OpenGL library commands can be quite complicated. Luckily for this assignment, we have abstracted away the messy details of using the OpenGL libreary to a couple of relatively simple APIs in the `GLResourceManager` and `Shader` classes. You will need to look at their header files as well as the example calls in the starter code to see how they can be used. For the adventurous, we encourage you to look at the implementations of these two classes to get a sense on how to use OpenGL, since extra-credit or final project extensions of this assignment likely need to delve deeper.
 
 ### Part 1: Coordinate transform
 In the first part of this assignment you will enable interactive inspection of the scene by deriving the correct transformation matrix from world space to camera space.
@@ -97,17 +97,16 @@ You should see an image that looks a bit like the one below:
 
 ![Spheres starter image](misc/step0.png?raw=true)
 
-__IMPORTANT__: If you see a black screen it means your GL environment is not working correctly. Please reach out to course staff for help on getting it set up! Be prepared to provide the console error logs.
+__IMPORTANT__: If you see a black screen it means your GL environment is not working correctly. Please reach out to course staff for help on getting it set up! Be prepared to provide us with the console error logs.
 
 __What you need to do:__
 
-Notice that mouse scroll, left/right click-drag does nothing. This is because the world2cam transformation matrix is stubbed out in `Scene::createWorldToCameraMatrix`.
+Notice that when you run `render`, mouse controls like scrolling to rotate the camera or, left/right click-drag do nothing. This is because the starter code does not correctly implement the world space-to-camera space transformation. See the `world2cam` transformation matrix that is stubbed out in `Scene::createWorldToCameraMatrix`.
 Your task is to derive the correct matrix to enable interactive inspection of the scene.
 
 A correct implementation will yield the following view, and allow interactive inspection with the mouse!
 
 ![Correct World2Cam Transform](misc/step1.png?raw=true)
-
 
 ### Part 2: Implementing Phong Reflectance
 
@@ -120,6 +119,8 @@ Notice that the scene is rendered with a texture map on the ground plane and two
 A correct implementation of Phong reflectance should yield shaded spheres, which should look like this.
 
 ![Spheres with phong](misc/step2.png?raw=true)
+
+__NOTE: You can press the `S` key at any type when running the `render` application to "hot reload" your vertex and fragment shaders.. You do not need to quit the program to see changes to a shader! Yes, you can thank the staff later. ;-)__
 
 ### Part 3: Normal mapping
 
@@ -139,10 +140,16 @@ First, modify the vertex shader `shader.vert` to compute a transform `tan2World`
 * How do you create a rotation matrix that takes tangent space vectors to object space vector?  [See this slide](http://cs248.stanford.edu/winter19/lecture/transforms/slide_049) for a hint.
 
 Second, in `shader.frag`, you need to sample the normal map, and then use `tan2World` to compute a world space normal at the current surface sample point.
-However, the normal map is not yet passed into the shader. You need to first create the binding in C++ in `Mesh::internalDraw` in `mesh.cpp` so that the shader have access to the normal map.
-Specifically, the normal map is handled as texture and we have already prepared the texture in GL in `Mesh::Mesh` and have saved a handle to the prepared texture as `normalTextureId_`.
-You should follow the example of `diffuseTextureSampler` to declare a texture sampler in `shader.frag` and bind the prepared texture to that using the handle `normalTextureId_`.
-After successfully passing the normal map to the fragment shader, you can modify `shader.frag` to sample it and compute the correct normal.
+However, in the starter code, the normal map is not yet passed into the shader by the application.  There are two steps that you need to perform to do this. First, you will need to modify the C++ code (the "caller") to pass a texture object to the fragment shader (the callee).  Second, you'll need to declare a new uniform input variable in the shader.
+
+To implement the first step, take a look at the code in `Mesh::internalDraw` in `mesh.cpp`.  This is the C++ that makes OpenGL commands to draw the mesh.   Notice all the `shader_->set*` calls at the top of this function.  These calls pass arguments to the shader.  (In OpenGL terminology, they are "binding" parameters like uniform variables and textures to the shader program.)
+
+Take a look at how the C++ starter code binds the diffuse color texture object to the shader. (Look for this line):
+
+    if (doTextureMapping_)
+        shader_->setTextureSampler("diffuseTextureSampler", diffuseTextureId_);
+
+You'll need to extend the code to also bind the normal map texture (given by `normalTextureId_`) to the shader. Follow the example of `diffuseTextureSampler` to declare a corresponding texture sampler parameter in `shader.frag` and bind the prepared texture to that using the handle `normalTextureId_`.  After successfully passing the normal map to the fragment shader, you can modify `shader.frag` to sample it and compute the correct normal.
 
 We recommend that you debug normal mapping on the sphere scene (`media/spheres/spheres.json`).  
 
