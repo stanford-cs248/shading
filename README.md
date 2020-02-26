@@ -248,7 +248,7 @@ Your work in the fragment shader is a bit more complex.  The shader receives the
 
 Now you have a screen-space XY that you can use to sample the shadow map, and obtain the closest scene point at this location.  You will need to test the value returned by the texture lookup against the distance between the current surface point and the light to determine if the surface is in shadow. (How do you compute this?)
 
-At this point, you may notice errors in your image.  Read about the phenomenon of ["shadow acne"](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping) and correct any artifacts by adding a bias term to your shadow distance comparison.  Biasing pushes the surface being tested *closer to the light* so that only surfaces a good bit closer to the light can cast shadows on the current surface.  At this point, with a properly biased shadow test (the reference solution uses a quite large bias value of 0.05), you should get an image that looks like this (shown from a top view):
+At this point, you may notice errors in your image.  Read about the phenomenon of ["shadow acne"](https://learnopengl.com/Advanced-Lighting/Shadows/Shadow-Mapping) and correct any artifacts by adding a bias term to your shadow distance comparison.  Biasing pushes the surface being tested *closer to the light* so that only surfaces a good bit closer to the light can cast shadows on the current surface.  At this point, with a properly biased shadow test (the reference solution uses a quite large bias value of 0.005), you should get an image that looks like this (shown from a top view):
 
 ![Hard shadows](misc/shadows_hard.png?raw=true)
 
