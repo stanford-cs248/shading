@@ -1,10 +1,8 @@
 # Stanford CS248 Assignment 3: Real-Time Shader Programming
 
-The repository is located at https://github.com/stanford-cs248/shading
-
 ## Due date
 
-The assignment is due Thu Feb 20th, at 11:59:59 PM.
+The assignment is due Thu Feb 25th, at 11:59:59 PM.
 
 ## Summary
 
@@ -13,7 +11,7 @@ In this assignment, you are a given a simple real-time renderer and a simple 3D 
 ## Build Instructions
 
 In order to ease the process of running on different platforms, we will be using [CMake](http://www.cmake.org/) for our assignments. You will need a CMake installation of version 2.8+ to build the code for this assignment. It should also be relatively easy to build the assignment and work locally on your OSX or 64-bit version of Linux or Windows.
-The project can be run by SSH'ing to rice.stanford.edu with your SUNet ID, password, and two-step authentication using MobaXterm (remember to turn on X11 forwarding). If you choose to do so, you can skip over to the next step.
+The project can be run by SSH'ing to rice.stanford.edu with your SUNet ID, password, and two-step authentication (remember to turn on X11 forwarding). If you choose to do so, you can skip over to the next step.
 The project requires OpenGL version 3.0+.
 
 ### OS X/Linux Build Instructions
