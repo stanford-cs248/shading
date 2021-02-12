@@ -205,7 +205,7 @@ The first step in this part of the assignment is to extend your fragment shader 
 ![Softer spotlights](misc/spotlight_soft.png?raw=true)
 ![Softer spotlights from above](misc/spotlight_soft_above.png?raw=true)
 
-#### Part 4.2 Shadow Mapping ####
+#### Part 5.2 Shadow Mapping ####
 
 Now you will improve your spotlights so they cast shadows.  In class we discussed the [shadow mapping algorithm](http://cs248.stanford.edu/winter19/lecture/geometricqueries/slide_046) for approximating shadows in a rasterization-based rendering pipeline. Recall that shadow mapping requires two steps.
 
