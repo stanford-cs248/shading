@@ -85,7 +85,7 @@ We didn't specifically talk about the specifics of GLSL programming in class, so
 
 The client C++ code that makes OpenGL library commands can be quite complicated. Luckily for this assignment, we have abstracted away the messy details of using the OpenGL libreary to a couple of relatively simple APIs in the `GLResourceManager` and `Shader` classes. You will need to look at their header files as well as the example calls in the starter code to see how they can be used. For the adventurous, we encourage you to look at the implementations of these two classes to get a sense on how to use OpenGL, since extra-credit or final project extensions of this assignment likely need to delve deeper.
 
-### Part 1: Coordinate transform
+### Part 1: Coordinate transform (15 pts)
 In the first part of this assignment you will enable interactive inspection of the scene by deriving the correct transformation matrix from world space to camera space.
 To begin, render the spheres scene using the command:
 
@@ -106,7 +106,7 @@ A correct implementation will yield the following view, and allow interactive in
 
 ![Correct World2Cam Transform](misc/step1.png?raw=true)
 
-### Part 2: Implementing Phong Reflectance
+### Part 2: Implementing Phong Reflectance (15 pts)
 
 In the later parts of this assignment you will implement two important aspects of defining a material.  First, you will implement a simple BRDF that implements the phong reflectance model to render a shiny surface.
 
@@ -120,7 +120,7 @@ A correct implementation of Phong reflectance should yield shaded spheres, which
 
 __NOTE: You can press the `S` key at any type when running the `render` application to "hot reload" your vertex and fragment shaders.. You do not need to quit the program to see changes to a shader! Yes, you can thank the staff later. ;-)__
 
-### Part 3: Normal mapping
+### Part 3: Normal mapping (15 pts)
 
 Although there is a texture map on the ground plane and spheres to add detail to these surfaces, the surfaces continue to look "flat". Your next task to implement [normal mapping](http://cs248.stanford.edu/winter19/lecture/texture/slide_039) to create the illusion of a surface having more detail that what is modeled by the underlying geometry.  They idea of normal mapping is to perturb the surface's geometric normal with an offset by a vector encoded in a texture map.  An example "normal map" is shown at right in the image below.
 
@@ -159,7 +159,7 @@ With a correct implementation of normal mapping the scene will look like this:
 
 __Note: After getting part 3 working, this is a good time to stop and take a look at some of the details of the implementation of `gl_resource_manager.cpp` to see the behind the curtain details of how texture objects are created using OpenGL and how parameters are bound to the GL pipeline.__
 
-### Part 4: Adding Environment Lighting
+### Part 4: Adding Environment Lighting (15 pts)
 
 So far, your shaders have used simple point and directional light sources in the scene. (Notice that in `shader.frag` the code iterated over light sources and accumulated reflectance.)  We'd now like you to implement a more complex form of light source.  This light source, called an image based environment light, described [here in lecture](http://cs248.stanford.edu/winter19/lecture/materials/slide_037) represents light incoming on the scene from an _infinitely far source, but from all directions_.  Pixel (x,y) in the texture map encodes the magnitude and color and light from the direction (phi, theta).  Phi and theta encode a direction in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
 
@@ -180,7 +180,7 @@ You'll also be able to render a reflective teapot (`media/teapot/teapot.json`), 
 
 ![Mirror teapot](misc/teapot_mirror.png?raw=true)
 
-### Part 5: Adding Spotlights and Shadows
+### Part 5: Adding Spotlights and Shadows (40 pts)
 
 In the final part of this assignment you will implement a more advanced type of light source, a spotlight, as well as use shadow mapping to compute smooth shadows for your spotlights.  These more advanced lighting conditions will significantly improve the realism of your rendering.  When you are done with this part of the assignment, you will be able to render the scene `media/spheres/spheres_shadow.json` to get a rendering like this:
 
@@ -190,7 +190,7 @@ The scene is illuminated by three [spotlights](http://cs248.stanford.edu/winter1
 
 ![View from above](misc/shadows_soft.png?raw=true)
 
-#### Part 5.1 Adding Spotlights ####
+#### Part 5.1 Adding Spotlights (10 pts) #### 
 
 The first step in this part of the assignment is to extend your fragment shader for rendering spotlights. You will need to modify `media/shader_shadow.frag` for this task.  Note that if you have completed Parts 1-3 of the assignment, you can drop your solutions from `shader.vert` and `shader.frag` into this file so that you can render `media/spheres/spheres_shadow.json` with correct texture mapping, normal mapping, and environment lighting. 
 
@@ -205,7 +205,7 @@ The first step in this part of the assignment is to extend your fragment shader 
 ![Softer spotlights](misc/spotlight_soft.png?raw=true)
 ![Softer spotlights from above](misc/spotlight_soft_above.png?raw=true)
 
-#### Part 5.2 Shadow Mapping ####
+#### Part 5.2 Shadow Mapping (30 pts) ####
 
 Now you will improve your spotlights so they cast shadows.  In class we discussed the [shadow mapping algorithm](http://cs248.stanford.edu/winter19/lecture/geometricqueries/slide_046) for approximating shadows in a rasterization-based rendering pipeline. Recall that shadow mapping requires two steps.
 
