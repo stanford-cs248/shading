@@ -2,7 +2,7 @@
 
 ## Due date
 
-The assignment is due Thu Feb 25th, at 11:59:59 PM.
+The assignment is due Thu Mar 18th, at 11:59:59 PM.
 
 ## Summary
 
@@ -18,7 +18,7 @@ The project requires OpenGL version 3.0+.
 
 If you are working on OS X and do not have CMake installed, we recommend installing it through [Homebrew](http://brew.sh/): `$ brew install cmake`.  You may also need the freetype package `$ brew install freetype`.
 
-If you are working on Linux, you should be able to install dependencies with your system's package manager as needed (you may need cmake and freetype, and possibly others).
+If you are working on Linux, you should be able to install dependencies with your system's package manager as needed (you may need cmake and freetype, and possibly others). You may need to check that you are using X.Org and not Wayland (the default in non-LTS Ubuntu release), or the compiled binary may crash immediately.
 
 #### To install freetype on Linux:
 
@@ -73,7 +73,7 @@ A table of all the keyboard controls in the application is provided below.
 
 ## Getting Oriented in the Code ##
 
-To complete this assignment, you'll be writing shaders in a language called GLSL (OpenGL Shading Language).  GLSL's syntax is C/C++ "like", but it features a number of built in types specific to graphics. In this assignment, there are two shaders, a __vertex shader__ `media/shader.vert` that is executed _once per vertex_ of each rendered triangle mesh.  And a __fragment shader__ `media/shader.frag` that executes _once per fragment_ (a.k.a. once per screen sample covered by a triangle.)
+To complete this assignment, you'll be writing shaders in a language called GLSL (OpenGL Shading Language).  GLSL's syntax is C/C++ "like", but it features a number of built in types specific to graphics. In this assignment, there are two shaders, a __vertex shader__ `src/shader/shader.vert` that is executed _once per vertex_ of each rendered triangle mesh.  And a __fragment shader__ `src/shader/shader.frag` that executes _once per fragment_ (a.k.a. once per screen sample covered by a triangle.)
 
 We didn't specifically talk about the specifics of GLSL programming in class, so you'll have to pick it up on your own. Fortunately, there are a number of great GLSL tutorials online, but we recommend [The Book of Shaders](https://thebookofshaders.com/).  Here are a few things to know:
 
@@ -112,7 +112,7 @@ In the later parts of this assignment you will implement two important aspects o
 
 __What you need to do:__
 
-Notice that the scene is rendered with a texture map on the ground plane and two of the three spheres, but there is no lighting in the rendering. To add basic lighting, we'd like you to implement `Phong_BRDF()` in `media/shader.frag`. This function should implement the [Phong Reflectance](https://en.wikipedia.org/wiki/Phong_reflection_model) model.  Your implementation should compute the diffuse and specular components of this reflectance model in `Phong_BRDF()`.  Note that the ambient term is independent of scene light sources and should be added in to the total surface reflectance outside of the light integration loops (the starter code already does this).  
+Notice that the scene is rendered with a texture map on the ground plane and two of the three spheres, but there is no lighting in the rendering. To add basic lighting, we'd like you to implement `Phong_BRDF()` in `src/shader/shader.frag`. This function should implement the [Phong Reflectance](https://en.wikipedia.org/wiki/Phong_reflection_model) model.  Your implementation should compute the diffuse and specular components of this reflectance model in `Phong_BRDF()`.  Note that the ambient term is independent of scene light sources and should be added in to the total surface reflectance outside of the light integration loops (the starter code already does this).
 
 A correct implementation of Phong reflectance should yield shaded spheres, which should look like this.
 
@@ -128,9 +128,9 @@ Although there is a texture map on the ground plane and spheres to add detail to
 
 Each RGB sample in the "normal map" encodes a 3D vector that is a perturbation of the geometry's actual normal at the corresponding surface point.  However, instead of encoding this offset in single coordinate space (e.g, object space or world space), the vectors in the normal map are represented in the __surface's tangent space.__ Tangent space is a coordinate frame that is relative to the surface's orientation at each point. It is defined by the surface's normal, aligned with the Z-axis [0 0 1] in tangent space, and a tangent vector to the surface, corresponding to X-axis [1 0 0].  The tangent space coordinate frame at a point on the surface is illustrated at left in the figure above.
 
-Normal mapping works as follows: given a point on the surface, your shader needs to sample the normal map at the appropriate location to obtain the _tangent space normal_ at this point.  Then the shader should convert the tangent space normal to its world space representation so that the normal can be used for reflectance calculations. 
+Normal mapping works as follows: given a point on the surface, your shader needs to sample the normal map at the appropriate location to obtain the _tangent space normal_ at this point.  Then the shader should convert the tangent space normal to its world space representation so that the normal can be used for reflectance calculations.
 
-__What you need to do:__ 
+__What you need to do:__
 
 First, modify the vertex shader `shader.vert` to compute a transform `tan2World`.  This matrix should convert vectors in tangent space back to world space.  You should think about creating a rotation matrix that converts tangent space to object space, and then applying an additional transformation to move the object space frame world space.  The vertex shader emits `tan2World` for later use in fragment shading.
 
@@ -149,7 +149,7 @@ Take a look at how the C++ starter code binds the diffuse color texture object t
 
 You'll need to extend the code to also bind the normal map texture (given by `normalTextureId_`) to the shader. Follow the example of `diffuseTextureSampler` to declare a corresponding texture sampler parameter in `shader.frag` and bind the prepared texture to that using the handle `normalTextureId_`.  After successfully passing the normal map to the fragment shader, you can modify `shader.frag` to sample it and compute the correct normal.
 
-We recommend that you debug normal mapping on the sphere scene (`media/spheres/spheres.json`).  
+We recommend that you debug normal mapping on the sphere scene (`media/spheres/spheres.json`).
 
 Without normal mapping, the sphere looks like a flat sphere with a brick texture, as shown previously. But with normal mapping, notice how the bumpy surface creates more plausible reflective highlights in the rendering on the right.
 
@@ -165,12 +165,12 @@ So far, your shaders have used simple point and directional light sources in the
 
 __What you need to do:__
 
-In `media/shader.frag`, we'd like you to implement a perfectly mirror reflective surface.  The shader should [reflect the vector](http://cs248.stanford.edu/winter19/lecture/materials/slide_051) from the surface to the camera about the surface normal, and the use the reflected vector to perform a lookup in the environment map.  A few notes are below:
+In `src/shader/shader.frag`, we'd like you to implement a perfectly mirror reflective surface.  The shader should [reflect the vector](http://cs248.stanford.edu/winter19/lecture/materials/slide_051) from the surface to the camera about the surface normal, and the use the reflected vector to perform a lookup in the environment map.  A few notes are below:
 
 * Just like with normal mapping, the environment map is not yet passed into the shader. Similar to what you did in normal mapping, you need to bind the environment texture map with handle `environmentTextureId_` to a texture sampler parameter in `shader.frag`.  Recall this is done by making edits to `Mesh::internalDraw` and adding an additional sampler variable to the fragment shader.
 * `dir2camera` in `shader.frag` conveniently gives you the world space direction from the fragment's surface point _to the camera_.  It is not normalized.
 * The function `vec3 SampleEnvironmentMap(vec3 L)` takes as input a direction (outward from the scene), and returns the radiance from the environment light arriving from this direction (this is light arriving at the surface from an infinitely far light source from the direction -L).
-* To perform an environment map lookup, you have to convert the reflection direction from its 3D Euclidean representation to spherical coordinates phi and theta.  In this assignment rendering is set up to use a a right-handed coordinate system (where Y is up, X is pointing to the right, and Z is pointing toward the camera), so you'll need to adjust the standard equations of converting from XYZ to spherical coordinates accordingly.  Specifically, in this assignment, the polar (or zenith) angle __theta__ is the angle between the direction and the Y axis.  The azimuthal angle __phi__ is zero when the direction vector is in the YZ plane, and increases as this vector rotates toward the XY plane. 
+* To perform an environment map lookup, you have to convert the reflection direction from its 3D Euclidean representation to spherical coordinates phi and theta.  In this assignment rendering is set up to use a a right-handed coordinate system (where Y is up, X is pointing to the right, and Z is pointing toward the camera), so you'll need to adjust the standard equations of converting from XYZ to spherical coordinates accordingly.  Specifically, in this assignment, the polar (or zenith) angle __theta__ is the angle between the direction and the Y axis.  The azimuthal angle __phi__ is zero when the direction vector is in the YZ plane, and increases as this vector rotates toward the XY plane.
 
 Once you've correctly implemented an environment map lookups, the rightmost sphere will look as if it's a perfect mirror.
 
@@ -190,9 +190,9 @@ The scene is illuminated by three [spotlights](http://cs248.stanford.edu/winter1
 
 ![View from above](misc/shadows_soft.png?raw=true)
 
-#### Part 5.1 Adding Spotlights (10 pts) #### 
+#### Part 5.1 Adding Spotlights (10 pts) ####
 
-The first step in this part of the assignment is to extend your fragment shader for rendering spotlights. You will need to modify `media/shader_shadow.frag` for this task.  Note that if you have completed Parts 1-3 of the assignment, you can drop your solutions from `shader.vert` and `shader.frag` into this file so that you can render `media/spheres/spheres_shadow.json` with correct texture mapping, normal mapping, and environment lighting. 
+The first step in this part of the assignment is to extend your fragment shader for rendering spotlights. You will need to modify `src/shader/shader_shadow.frag` for this task.  Note that if you have completed Parts 1-3 of the assignment, you can drop your solutions from `shader.vert` and `shader.frag` into this file so that you can render `media/spheres/spheres_shadow.json` with correct texture mapping, normal mapping, and environment lighting.
 
 1. Modify the `shader_shadow.frag` to compute the illumination from a spotlight by adding code to the body of the loop over spotlights.  Details about the implementation are in the starter code, but as a quick summary, a spotlight is a light that has non-zero illumination  only in directions that are within `cone_angle` of the light direction. Note that the intensity of a spotlight falls off with a 1/D^2 factor (where D is the distance from the light source). If you implement this logic, you should see an image that looks like the one below.  In the image below, notice how the intensity of the spotlight falls off with distance.
 
@@ -210,7 +210,7 @@ The first step in this part of the assignment is to extend your fragment shader 
 Now you will improve your spotlights so they cast shadows.  In class we discussed the [shadow mapping algorithm](http://cs248.stanford.edu/winter19/lecture/geometricqueries/slide_046) for approximating shadows in a rasterization-based rendering pipeline. Recall that shadow mapping requires two steps.
 
    1. In step 1, for each light source, we render scene geometry using a camera that is positioned at the light source. The result of rendering the scene from this vantage point is a depth buffer encoding the *closest point in the scene at each sample point*.  This depth buffer will be used as a single channel texture map provided to a fragment shader in step 2.
-   2. In step 2, when calculating illumination during rendering (when shading a surface point), the fragment shader must compute whether the current surface point is in shadow from the perspective of the light source.  To do this, the fragment shader computes the coordinate of the current scene point *in the coordinate system* of a camera positioned at the light (in "light space"). It then uses the (x,y) values of this "light space" coordinate to perform a lookup into the shadow map texture.  If the surface is not the closest scene element to the light at this point, then it is in shadow.  
+   2. In step 2, when calculating illumination during rendering (when shading a surface point), the fragment shader must compute whether the current surface point is in shadow from the perspective of the light source.  To do this, the fragment shader computes the coordinate of the current scene point *in the coordinate system* of a camera positioned at the light (in "light space"). It then uses the (x,y) values of this "light space" coordinate to perform a lookup into the shadow map texture.  If the surface is not the closest scene element to the light at this point, then it is in shadow.
 
 __What to do in C++ client code:__
 
@@ -227,10 +227,10 @@ Once you have set-up the client code correctly, you should be able to visualize 
 ![Depth Map](misc/depth_map.png?raw=true)
 
 The last step in the client code is to pass the array texture that is __written to__ during the shadow map generation passes as an input texture to the fragment shader (for sampling from) that is used in the final render pass that actually renders the scene. (Recall these bindings are set up in `Mesh::internalDraw`, as you have done twice now with normal map and environment map.)
-Sampling from Array Textures in the GLSL fragment shader requires a slightly different syntax. Look in `Scene::visualizeShadowMap` and `media/shadow_viz.frag` to see how to use it.
+Sampling from Array Textures in the GLSL fragment shader requires a slightly different syntax. Look in `Scene::visualizeShadowMap` and `src/shader/shadow_viz.frag` to see how to use it.
 In `Mesh::internalDraw`, you also need to pass your shaders an array of matrices representing object space to "light space" transforms for all shadowed lights. See starter code for details.
 
-   
+
 __What to do in the vertex shader:__
 
 Your work in the vertex shader is quite easy.  Just transform the triangle vertex positions into light space, create new vertex shader output variables for them to pass into the fragment shader.
@@ -284,7 +284,7 @@ You should be able to adapt this tooling for your own debugging needs.
 
 There are many ways to go farther in this assignment.  Some ideas include:
 
-* Implement other BRDFs that are interesting to you.  Google terms like "physically based shading".  
+* Implement other BRDFs that are interesting to you.  Google terms like "physically based shading".
 
 * Consider adding more sophisticated light types such as area lights via [linear transformed cosine](https://eheitzresearch.wordpress.com/415-2/)
 
@@ -298,6 +298,6 @@ The writeup must be a pdf, markdown, or plaintext file. Include it in the root d
 
 Failure to submit this writeup will incur a penalty on the assignment.
 
-## Handin Instructions
+## Submission Instructions
 
-We are using [Canvas](https://canvas.stanford.edu) as our submission tool. You should create and upload a zip archive of your entire directory along with the writeup (e.g. writeup.txt). Please do __NOT__ include your build directory.
+We are using [Gradescope](https://www.gradescope.com/) as our submission tool. You should create and upload a zip archive of your __/src__ directories along with the writeup (e.g. writeup.txt). *Please do __NOT__ include your build directory.*

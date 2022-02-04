@@ -28,8 +28,8 @@
 			"filename" : "teapot.obj",
             "material" : "mirror",
 			"environment_filename" : "../textures/streetscene.png",
-			"vertex_shader_filename" : "../shader.vert",
-			"fragment_shader_filename" : "../shader.frag"
+			"vertex_shader_filename" : "../../src/shader/shader.vert",
+			"fragment_shader_filename" : "../../src/shader/shader.frag"
 		}
 	]
 }

@@ -23,8 +23,8 @@
 	    "texcoord_v_flip" : "true",
             "texcoord_u_scale" : 4,
             "texcoord_v_scale" : 4,
-			"vertex_shader_filename" : "../debug.vert",
-			"fragment_shader_filename" : "../debug.frag"
+			"vertex_shader_filename" : "../../src/shader/debug.vert",
+			"fragment_shader_filename" : "../../src/shader/debug.frag"
 		}
         
 	]

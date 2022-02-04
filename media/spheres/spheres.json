@@ -35,8 +35,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 1,
             "texcoord_v_scale" : 1,
-			"vertex_shader_filename" : "../shader.vert",
-			"fragment_shader_filename" : "../shader.frag"
+			"vertex_shader_filename" : "../../src/shader/shader.vert",
+			"fragment_shader_filename" : "../../src/shader/shader.frag"
 		},
         
 		{
@@ -49,8 +49,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 1,
             "texcoord_v_scale" : 1,
-			"vertex_shader_filename" : "../shader.vert",
-			"fragment_shader_filename" : "../shader.frag"
+			"vertex_shader_filename" : "../../src/shader/shader.vert",
+			"fragment_shader_filename" : "../../src/shader/shader.frag"
 		},
         
 		{
@@ -61,8 +61,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 1,
             "texcoord_v_scale" : 1,
-			"vertex_shader_filename" : "../shader.vert",
-			"fragment_shader_filename" : "../shader.frag"
+			"vertex_shader_filename" : "../../src/shader/shader.vert",
+			"fragment_shader_filename" : "../../src/shader/shader.frag"
 		},
         
 		{
@@ -75,8 +75,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 4,
             "texcoord_v_scale" : 4,
-			"vertex_shader_filename" : "../shader.vert",
-			"fragment_shader_filename" : "../shader.frag"
+			"vertex_shader_filename" : "../../src/shader/shader.vert",
+			"fragment_shader_filename" : "../../src/shader/shader.frag"
 		}
         
 	]

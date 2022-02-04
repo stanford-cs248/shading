@@ -1,5 +1,5 @@
 {
-    "base_shader_dir" : "..",
+    "base_shader_dir" : "../../src/shader",
     
 	"camera" :
 	{
@@ -60,8 +60,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 1,
             "texcoord_v_scale" : 1,
-			"vertex_shader_filename" : "../shader_shadow.vert",
-			"fragment_shader_filename" : "../shader_shadow.frag"
+			"vertex_shader_filename" : "../../src/shader/shader_shadow.vert",
+			"fragment_shader_filename" : "../../src/shader/shader_shadow.frag"
 		},
         
 		{
@@ -74,8 +74,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 1,
             "texcoord_v_scale" : 1,
-			"vertex_shader_filename" : "../shader_shadow.vert",
-			"fragment_shader_filename" : "../shader_shadow.frag"
+			"vertex_shader_filename" : "../../src/shader/shader_shadow.vert",
+			"fragment_shader_filename" : "../../src/shader/shader_shadow.frag"
 		},
 
 		{
@@ -89,8 +89,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 1,
             "texcoord_v_scale" : 1,
-			"vertex_shader_filename" : "../shader_shadow.vert",
-			"fragment_shader_filename" : "../shader_shadow.frag"
+			"vertex_shader_filename" : "../../src/shader/shader_shadow.vert",
+			"fragment_shader_filename" : "../../src/shader/shader_shadow.frag"
 		},
 
         {
@@ -104,8 +104,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 1,
             "texcoord_v_scale" : 1,
-			"vertex_shader_filename" : "../shader_shadow.vert",
-			"fragment_shader_filename" : "../shader_shadow.frag"
+			"vertex_shader_filename" : "../../src/shader/shader_shadow.vert",
+			"fragment_shader_filename" : "../../src/shader/shader_shadow.frag"
 		},
         
 		{
@@ -116,8 +116,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 1,
             "texcoord_v_scale" : 1,
-			"vertex_shader_filename" : "../shader_shadow.vert",
-			"fragment_shader_filename" : "../shader_shadow.frag"
+			"vertex_shader_filename" : "../../src/shader/shader_shadow.vert",
+			"fragment_shader_filename" : "../../src/shader/shader_shadow.frag"
 		},
         
 		{
@@ -130,8 +130,8 @@
 			"texcoord_v_flip" : "true",
             "texcoord_u_scale" : 4,
             "texcoord_v_scale" : 4,
-			"vertex_shader_filename" : "../shader_shadow.vert",
-			"fragment_shader_filename" : "../shader_shadow.frag"
+			"vertex_shader_filename" : "../../src/shader/shader_shadow.vert",
+			"fragment_shader_filename" : "../../src/shader/shader_shadow.frag"
 		}    
 	]
 }
