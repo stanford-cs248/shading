@@ -2,7 +2,7 @@
 
 ## Due date
 
-The assignment is due Thu Mar 18th, at 11:59:59 PM.
+The assignment is due Fri Mar 18th, at 11:59:59 PM.
 
 ## Summary
 
@@ -18,7 +18,7 @@ The project requires OpenGL version 3.0+.
 
 If you are working on OS X and do not have CMake installed, we recommend installing it through [Homebrew](http://brew.sh/): `$ brew install cmake`.  You may also need the freetype package `$ brew install freetype`.
 
-If you are working on Linux, you should be able to install dependencies with your system's package manager as needed (you may need cmake and freetype, and possibly others). You may need to check that you are using X.Org and not Wayland (the default in non-LTS Ubuntu release), or the compiled binary may crash immediately.
+If you are working on Linux, you should be able to install dependencies with your system's package manager as needed (you may need cmake and freetype, and possibly others). You may need to check that you are using X.Org and not Wayland (the default in non-LTS Ubuntu releases), or the compiled binary may crash immediately.
 
 #### To install freetype on Linux:
 
@@ -300,4 +300,4 @@ Failure to submit this writeup will incur a penalty on the assignment.
 
 ## Submission Instructions
 
-We are using [Gradescope](https://www.gradescope.com/) as our submission tool. You should create and upload a zip archive of your __/src__ directories along with the writeup (e.g. writeup.txt). *Please do __NOT__ include your build directory.*
+We are using [Gradescope](https://www.gradescope.com/) as our submission tool. You should create and upload a zip archive of your __/src__ directory along with the writeup (e.g. writeup.txt). *Please do __NOT__ include your build directory.*
