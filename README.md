@@ -22,7 +22,7 @@ In this assignment, you are a given a simple real-time renderer and a simple 3D 
 ## Build Instructions
 
 In order to ease the process of running on different platforms, we will be using [CMake](http://www.cmake.org/) for our assignments. You will need a CMake installation of version 2.8+ to build the code for this assignment. It should also be relatively easy to build the assignment and work locally on your OSX or 64-bit version of Linux or Windows.
-The project can be run by SSH'ing to rice.stanford.edu with your SUNet ID, password, and two-step authentication (remember to turn on X11 forwarding). 
+The project can be run by SSH'ing to rice.stanford.edu with your SUNet ID, password, and two-step authentication (remember to turn on X11 forwarding).
 The project requires OpenGL version 3.0+.
 
 ### OS X/Linux Build Instructions
@@ -60,7 +60,7 @@ These 3 steps (1) create an out-of-source build directory, (2) configure the pro
 You need to install the latest version of [CMake](http://www.cmake.org/) and [Visual Studio](https://www.visualstudio.com/). Visual Studio Community is free.
 
 After installing CMake and Visual Studio, let's start with building in CMake. Replace `SOURCE_DIR` to the cloned directory (`shading/` in our case, NOT `src/`), and `BUILD_DIR` to `draw-svg/build`.
-<!-- 
+<!--
 ![Sample locations](misc/cmake_initial_setup.png?raw=true)
  -->
 Then, press `Configure` button, select **Visual Studio 17 2022** for generator and **x64** for platform, and you should see `Configuring done` message. Then, press `Generate` button and you should see `Generating done`.
@@ -73,7 +73,7 @@ If you plan on using Visual Studio to debug your program, you must change `rende
 
 You should also change the build mode to `Release` from `Debug` occasionally by clicking the Solution Configurations drop down menu on the top menu bar, which will make your program run faster. Note that you will have to set `Command Arguments` again if you change the build mode. Note that your application must run properly in both debug and release build.
 
-**Note**: to avoid the linking error when building x64 (e.g. LNK4272: library machine type 'x86' conflicts with target machine type 'x64', LNK1104: cannot open file freetype.lib.), please make the following changes to your draw-svg project properties (right click `drawsvg` project in the Solution Explorer sidebar to open Properties).
+**Note**: to avoid the linking error when building x64 (e.g. LNK4272: library machine type 'x86' conflicts with target machine type 'x64', LNK1104: cannot open file freetype.lib.), please make the following changes to your shading project properties (right click `render` project in the Solution Explorer sidebar to open Properties).
 ```
 Properties -> Linker -> Input -> edit -> change freetype.lib to freetype_win64.lib
 ```
