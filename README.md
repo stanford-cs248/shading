@@ -140,7 +140,7 @@ __NOTE: You can press the `S` key at any type when running the `render` applicat
 
 ### Part 3: Normal mapping (15 pts)
 
-Although there is a texture map on the ground plane and spheres to add detail to these surfaces, the surfaces continue to look "flat". Your next task to implement [normal mapping](http://cs248.stanford.edu/winter19/lecture/texture/slide_039) to create the illusion of a surface having more detail that what is modeled by the underlying geometry.  They idea of normal mapping is to perturb the surface's geometric normal with an offset by a vector encoded in a texture map.  An example "normal map" is shown at right in the image below.
+Although there is a texture map on the ground plane and spheres to add detail to these surfaces, the surfaces continue to look "flat". Your next task to implement [normal mapping](https://gfxcourses.stanford.edu/cs248/winter22/lecture/texture/slide_39) to create the illusion of a surface having more detail that what is modeled by the underlying geometry.  They idea of normal mapping is to perturb the surface's geometric normal with an offset by a vector encoded in a texture map.  An example "normal map" is shown at right in the image below.
 
 ![Tangent space figure](misc/tangent_fig.png?raw=true)
 
@@ -303,10 +303,12 @@ You should be able to adapt this tooling for your own debugging needs.
 
 ### Extra Credit
 
-There are many ways to go farther in this assignment.  Some ideas include:
+There are many ways to go farther in this assignment.  Here are a few ideas... however note that the last two in the list below involve significantly more work than extra credits in past assignments, and they could even be reasonable challenges for final projects.
 
 * Implement other BRDFs that are interesting to you.  Google terms like "physically based shading".
 
-* Consider adding more sophisticated light types such as area lights via [linear transformed cosine](https://eheitzresearch.wordpress.com/415-2/)
+* Consider adding more sophisticated light types such as area lights via [linear transformed cosines](https://eheitzresearch.wordpress.com/415-2/).
+
+* Consider implementing environment mapping where you render a [cube map](https://learnopengl.com/Advanced-OpenGL/Cubemaps) in a first pass and then use it as an input texture in the second pass to render reflections.
 
 * Improve the shadow mapping algorithm with [cascaded shadow maps](https://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf).
