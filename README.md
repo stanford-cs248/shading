@@ -115,9 +115,9 @@ You should see an image that looks a bit like the one below:
 
 __IMPORTANT__: If you see a black screen it means your GL environment is not working correctly. Please reach out to course staff for help on getting it set up! Be prepared to provide us with the console error logs.
 
-__What you need to do:__
+__What you need to do:__ `src/dynamic_scene/scene.cpp:Scene::createWorldToCameraMatrix()`
 
-Notice that when you run `render`, mouse controls like scrolling to rotate the camera or, left/right click-drag do nothing. This is because the starter code does not correctly implement the world space-to-camera space transformation. See the `world2cam` transformation matrix that is stubbed out in `Scene::createWorldToCameraMatrix`.
+Notice that when you run `render`, mouse controls like scrolling to rotate the camera or, left/right click-drag do nothing. This is because the starter code does not correctly implement the world space-to-camera space transformation. **Implement** `Scene::createWorldToCameraMatrix()` in `src/dynamic_scene/scene.cpp`.
 Your task is to derive the correct matrix to enable interactive inspection of the scene.
 
 A correct implementation will yield the following view, and allow interactive inspection with the mouse!
@@ -128,9 +128,9 @@ A correct implementation will yield the following view, and allow interactive in
 
 In the later parts of this assignment you will implement two important aspects of defining a material.  First, you will implement a simple BRDF that implements the phong reflectance model to render a shiny surface.
 
-__What you need to do:__
+__What you need to do:__ `src/shader/shader.frag`
 
-Notice that the scene is rendered with a texture map on the ground plane and two of the three spheres, but there is no lighting in the rendering. To add basic lighting, we'd like you to implement `Phong_BRDF()` in `src/shader/shader.frag`. This function should implement the [Phong Reflectance](https://en.wikipedia.org/wiki/Phong_reflection_model) model.  Your implementation should compute the diffuse and specular components of this reflectance model in `Phong_BRDF()`.  Note that the ambient term is independent of scene light sources and should be added in to the total surface reflectance outside of the light integration loops (the starter code already does this).
+Notice that the scene is rendered with a texture map on the ground plane and two of the three spheres, but there is no lighting in the rendering. To add basic lighting, we'd like you to **implement** `Phong_BRDF()` in `src/shader/shader.frag`. This function should implement the [Phong Reflectance](https://en.wikipedia.org/wiki/Phong_reflection_model) model.  Your implementation should compute the diffuse and specular components of this reflectance model in `Phong_BRDF()`.  Note that the ambient term is independent of scene light sources and should be added in to the total surface reflectance outside of the light integration loops (the starter code already does this).
 
 A correct implementation of Phong reflectance should yield shaded spheres, which should look like this.
 
@@ -148,7 +148,7 @@ Each RGB sample in the "normal map" encodes a 3D vector that is a perturbation o
 
 Normal mapping works as follows: given a point on the surface, your shader needs to sample the normal map at the appropriate location to obtain the _tangent space normal_ at this point.  Then the shader should convert the tangent space normal to its world space representation so that the normal can be used for reflectance calculations.
 
-__What you need to do:__
+__What you need to do:__ `src/shader/shader.vert` `src/shader/shader.frag` `src/dynamic_scene/mesh.cpp:Mesh::internalDraw()`
 
 First, modify the vertex shader `shader.vert` to compute a transform `tan2World`.  This matrix should convert vectors in tangent space back to world space.  You should think about creating a rotation matrix that converts tangent space to object space, and then applying an additional transformation to move the object space frame world space.  The vertex shader emits `tan2World` for later use in fragment shading.
 
@@ -156,16 +156,17 @@ First, modify the vertex shader `shader.vert` to compute a transform `tan2World`
 * How do you create a rotation matrix that takes tangent space vectors to object space vector?  [See this slide](http://cs248.stanford.edu/winter19/lecture/transforms/slide_049) for a hint.
 
 Second, in `shader.frag`, you need to sample the normal map, and then use `tan2World` to compute a world space normal at the current surface sample point.
-However, in the starter code, the normal map is not yet passed into the shader by the application.  There are two steps that you need to perform to do this. First, you will need to modify the C++ code (the "caller") to pass a texture object to the fragment shader (the callee).  Second, you'll need to declare a new uniform input variable in the shader.
 
-To implement the first step, take a look at the code in `Mesh::internalDraw` in `mesh.cpp`.  This is the C++ that makes OpenGL commands to draw the mesh.   Notice all the `shader_->set*` calls at the top of this function.  These calls pass arguments to the shader.  (In OpenGL terminology, they are "binding" parameters like uniform variables and textures to the shader program.)
+Third, in the starter code, the normal map is not yet passed into the shader by the application. There are two steps that you need to perform to do this. First, you will need to modify the C++ code (the "caller") to pass a texture object to the fragment shader (the callee).  Second, you'll need to declare a new uniform input variable in the shader.
+
+First step, take a look at the code in `Mesh::internalDraw()` in `mesh.cpp`.  This is the C++ that makes OpenGL commands to draw the mesh.   Notice all the `shader_->set*` calls at the top of this function.  These calls pass arguments to the shader.  (In OpenGL terminology, they are "binding" parameters like uniform variables and textures to the shader program.)
 
 Take a look at how the C++ starter code binds the diffuse color texture object to the shader. (Look for this line):
 
     if (doTextureMapping_)
         shader_->setTextureSampler("diffuseTextureSampler", diffuseTextureId_);
 
-You'll need to extend the code to also bind the normal map texture (given by `normalTextureId_`) to the shader. Follow the example of `diffuseTextureSampler` to declare a corresponding texture sampler parameter in `shader.frag` and bind the prepared texture to that using the handle `normalTextureId_`.  After successfully passing the normal map to the fragment shader, you can modify `shader.frag` to sample it and compute the correct normal.
+Second step, you'll need to extend the code to also bind the normal map texture (given by `normalTextureId_`) to the shader in `shader.frag`. Follow the example of `diffuseTextureSampler` to declare a corresponding texture sampler parameter in `shader.frag` and bind the prepared texture to that using the handle `normalTextureId_`.  After successfully passing the normal map to the fragment shader, you can modify `shader.frag` to sample it and compute the correct normal.
 
 We recommend that you debug normal mapping on the sphere scene (`media/spheres/spheres.json`).
 
@@ -181,7 +182,7 @@ __Note: After getting part 3 working, this is a good time to stop and take a loo
 
 So far, your shaders have used simple point and directional light sources in the scene. (Notice that in `shader.frag` the code iterated over light sources and accumulated reflectance.)  We'd now like you to implement a more complex form of light source.  This light source, called an image based environment light, described [here in lecture](http://cs248.stanford.edu/winter19/lecture/materials/slide_037) represents light incoming on the scene from an _infinitely far source, but from all directions_.  Pixel (x,y) in the texture map encodes the magnitude and color and light from the direction (phi, theta).  Phi and theta encode a direction in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
 
-__What you need to do:__
+__What you need to do:__ `src/shader/shader.frag` `src/dynamic_scene/mesh.cpp:Mesh::internalDraw()`
 
 In `src/shader/shader.frag`, we'd like you to implement a perfectly mirror reflective surface.  The shader should [reflect the vector](http://cs248.stanford.edu/winter19/lecture/materials/slide_051) from the surface to the camera about the surface normal, and the use the reflected vector to perform a lookup in the environment map.  A few notes are below:
 
@@ -212,6 +213,8 @@ The scene is illuminated by three [spotlights](http://cs248.stanford.edu/winter1
 
 The first step in this part of the assignment is to extend your fragment shader for rendering spotlights. You will need to modify `src/shader/shader_shadow.frag` for this task.  Note that if you have completed Parts 1-3 of the assignment, you can drop your solutions from `shader.vert` and `shader.frag` into this file so that you can render `media/spheres/spheres_shadow.json` with correct texture mapping, normal mapping, and environment lighting.
 
+__What you need to do:__ `src/shader/shader_shadow.frag`
+
 1. Modify the `shader_shadow.frag` to compute the illumination from a spotlight by adding code to the body of the loop over spotlights.  Details about the implementation are in the starter code, but as a quick summary, a spotlight is a light that has non-zero illumination  only in directions that are within `cone_angle` of the light direction. Note that the intensity of a spotlight falls off with a 1/D^2 factor (where D is the distance from the light source). If you implement this logic, you should see an image that looks like the one below.  In the image below, notice how the intensity of the spotlight falls off with distance.
 
 ![Hard spotlights](misc/spotlight_hard.png?raw=true)
@@ -230,7 +233,7 @@ Now you will improve your spotlights so they cast shadows.  In class we discusse
    1. In step 1, for each light source, we render scene geometry using a camera that is positioned at the light source. The result of rendering the scene from this vantage point is a depth buffer encoding the *closest point in the scene at each sample point*.  This depth buffer will be used as a single channel texture map provided to a fragment shader in step 2.
    2. In step 2, when calculating illumination during rendering (when shading a surface point), the fragment shader must compute whether the current surface point is in shadow from the perspective of the light source.  To do this, the fragment shader computes the coordinate of the current scene point *in the coordinate system* of a camera positioned at the light (in "light space"). It then uses the (x,y) values of this "light space" coordinate to perform a lookup into the shadow map texture.  If the surface is not the closest scene element to the light at this point, then it is in shadow.
 
-__What to do in C++ client code:__
+__What to do in C++ client code:__ `src/dynamic_scene/mesh.cpp:Mesh::internalDraw()` `src/dynamic_scene/scene.cpp:Scene::renderShadowPass()`
 
 We have created a seperate framebuffer for each spotlight. For each light the C++ code will render the scene from the perspective of the light into this framebuffer. (This is often called a "shadow map generation pass", or a "shadow pass".  The term "pass" is jargon that refers to a pass over all the scene geometry when rendering.) Handles for these per shadow map framebuffers are stored in `shadowFrameBufferId_`.
 In `Scene::renderShadowPass`, you need to configure OpenGL to render to the correct framebuffer when performing shadow map generation passes.
@@ -249,12 +252,12 @@ Sampling from Array Textures in the GLSL fragment shader requires a slightly dif
 In `Mesh::internalDraw`, you also need to pass your shaders an array of matrices representing object space to "light space" transforms for all shadowed lights. See starter code for details.
 
 
-__What to do in the vertex shader:__
+__What to do in the vertex shader:__ `src/shader/shader_shadow.vert`
 
 Your work in the vertex shader is quite easy.  Just transform the triangle vertex positions into light space, create new vertex shader output variables for them to pass into the fragment shader.
 
 
-__What to do in the fragment shader:__
+__What to do in the fragment shader:__ `src/shader/shader_shadow.frag`
 
 Your work in the fragment shader is a bit more complex.  The shader receives the light space *homogenous* position of the surface (we called it `position_shadowlight` in reference solution), and must use this position to determine if the surface is in shadow from the perspective of this light.  Since the position is in 3D-homogeneous coordinates, you first need to extract a non-homogeneous XY via the homogeneous divide:
 
