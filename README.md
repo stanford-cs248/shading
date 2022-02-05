@@ -153,7 +153,7 @@ __What you need to do:__ `src/shader/shader.vert` `src/shader/shader.frag` `src/
 First, modify the vertex shader `shader.vert` to compute a transform `tan2World`.  This matrix should convert vectors in tangent space back to world space.  You should think about creating a rotation matrix that converts tangent space to object space, and then applying an additional transformation to move the object space frame world space.  The vertex shader emits `tan2World` for later use in fragment shading.
 
 * Notice that in `shader.vert` you are given the normal (N) and surface tangent (T) at the current vertex.  But you are not given the third vector, often called the "binormal vector" (B) defining the Y-axis of tangent space.  How do you compute this vector given the normal and tangent?
-* How do you create a rotation matrix that takes tangent space vectors to object space vector?  [See this slide](http://cs248.stanford.edu/winter19/lecture/transforms/slide_049) for a hint.
+* How do you create a rotation matrix that takes tangent space vectors to object space vector?  [See this slide](https://gfxcourses.stanford.edu/cs248/winter22/lecture/transforms/slide_57) for a hint.
 
 Second, in `shader.frag`, you need to sample the normal map, and then use `tan2World` to compute a world space normal at the current surface sample point.
 
@@ -180,11 +180,11 @@ __Note: After getting part 3 working, this is a good time to stop and take a loo
 
 ### Part 4: Adding Environment Lighting (15 pts)
 
-So far, your shaders have used simple point and directional light sources in the scene. (Notice that in `shader.frag` the code iterated over light sources and accumulated reflectance.)  We'd now like you to implement a more complex form of light source.  This light source, called an image based environment light, described [here in lecture](http://cs248.stanford.edu/winter19/lecture/materials/slide_037) represents light incoming on the scene from an _infinitely far source, but from all directions_.  Pixel (x,y) in the texture map encodes the magnitude and color and light from the direction (phi, theta).  Phi and theta encode a direction in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
+So far, your shaders have used simple point and directional light sources in the scene. (Notice that in `shader.frag` the code iterated over light sources and accumulated reflectance.)  We'd now like you to implement a more complex form of light source.  This light source, called an image based environment light, described [here in lecture](https://gfxcourses.stanford.edu/cs248/winter22/lecture/shading/slide_42) represents light incoming on the scene from an _infinitely far source, but from all directions_.  Pixel (x,y) in the texture map encodes the magnitude and color and light from the direction (phi, theta).  Phi and theta encode a direction in [spherical coordinates](https://en.wikipedia.org/wiki/Spherical_coordinate_system).
 
 __What you need to do:__ `src/shader/shader.frag` `src/dynamic_scene/mesh.cpp:Mesh::internalDraw()`
 
-In `src/shader/shader.frag`, we'd like you to implement a perfectly mirror reflective surface.  The shader should [reflect the vector](http://cs248.stanford.edu/winter19/lecture/materials/slide_051) from the surface to the camera about the surface normal, and the use the reflected vector to perform a lookup in the environment map.  A few notes are below:
+In `src/shader/shader.frag`, we'd like you to implement a perfectly mirror reflective surface.  The shader should [reflect the vector](https://gfxcourses.stanford.edu/cs248/winter22/lecture/shading/slide_56) from the surface to the camera about the surface normal, and the use the reflected vector to perform a lookup in the environment map.  A few notes are below:
 
 * Just like with normal mapping, the environment map is not yet passed into the shader. Similar to what you did in normal mapping, you need to bind the environment texture map with handle `environmentTextureId_` to a texture sampler parameter in `shader.frag`.  Recall this is done by making edits to `Mesh::internalDraw` and adding an additional sampler variable to the fragment shader.
 * `dir2camera` in `shader.frag` conveniently gives you the world space direction from the fragment's surface point _to the camera_.  It is not normalized.
@@ -205,7 +205,7 @@ In the final part of this assignment you will implement a more advanced type of 
 
 ![Nice shadowed spotlights](misc/shadow_final.png?raw=true)
 
-The scene is illuminated by three [spotlights](http://cs248.stanford.edu/winter19/lecture/materials/slide_035), a red spotlight coming from the front-left of the scene, and a white spotlight coming from the front, and a cyan spotlight from front-right.  The image below is a view from above the scene.
+The scene is illuminated by three [spotlights](https://gfxcourses.stanford.edu/cs248/winter22/lecture/shading/slide_40), a red spotlight coming from the front-left of the scene, and a white spotlight coming from the front, and a cyan spotlight from front-right.  The image below is a view from above the scene.
 
 ![View from above](misc/shadows_soft.png?raw=true)
 
@@ -228,7 +228,7 @@ __What you need to do:__ `src/shader/shader_shadow.frag`
 
 #### Part 5.2 Shadow Mapping (30 pts) ####
 
-Now you will improve your spotlights so they cast shadows.  In class we discussed the [shadow mapping algorithm](http://cs248.stanford.edu/winter19/lecture/geometricqueries/slide_046) for approximating shadows in a rasterization-based rendering pipeline. Recall that shadow mapping requires two steps.
+Now you will improve your spotlights so they cast shadows.  In class we discussed the shadow mapping algorithm for approximating shadows in a rasterization-based rendering pipeline. Recall that shadow mapping requires two steps.
 
    1. In step 1, for each light source, we render scene geometry using a camera that is positioned at the light source. The result of rendering the scene from this vantage point is a depth buffer encoding the *closest point in the scene at each sample point*.  This depth buffer will be used as a single channel texture map provided to a fragment shader in step 2.
    2. In step 2, when calculating illumination during rendering (when shading a surface point), the fragment shader must compute whether the current surface point is in shadow from the perspective of the light source.  To do this, the fragment shader computes the coordinate of the current scene point *in the coordinate system* of a camera positioned at the light (in "light space"). It then uses the (x,y) values of this "light space" coordinate to perform a lookup into the shadow map texture.  If the surface is not the closest scene element to the light at this point, then it is in shadow.
