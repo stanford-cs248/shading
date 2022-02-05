@@ -14,6 +14,9 @@ uniform bool useMirrorBRDF;         // true if mirror brdf should be used (defau
 
 uniform sampler2D diffuseTextureSampler;
 
+// TODO CS248 Part 3: Normal Mapping
+// TODO CS248 Part 4: Environment Mapping
+
 
 //
 // lighting environment definition. Scenes may contain directional
@@ -67,7 +70,7 @@ vec3 Diffuse_BRDF(vec3 L, vec3 N, vec3 diffuseColor) {
 //
 vec3 Phong_BRDF(vec3 L, vec3 V, vec3 N, vec3 diffuse_color, vec3 specular_color, float specular_exponent)
 {
-    // TODO CS248: Phong Reflectance
+    // TODO CS248 Part 2: Phong Reflectance
     // Implement diffuse and specular terms of the Phong
     // reflectance model here.
 
@@ -83,7 +86,7 @@ vec3 Phong_BRDF(vec3 L, vec3 V, vec3 N, vec3 diffuse_color, vec3 specular_color,
 vec3 SampleEnvironmentMap(vec3 D)
 {
     //
-    // TODO CS248 Environment Mapping
+    // TODO CS248 Part 4: Environment Mapping
     // sample environment map in direction D.  This requires
     // converting D into spherical coordinates where Y is the polar direction
     // (warning: in our scene, theta is angle with Y axis, which differs from
@@ -126,7 +129,7 @@ void main(void)
     // perform normal map lookup if required
     vec3 N = vec3(0);
     if (useNormalMapping) {
-       // TODO: CS248 Normal Mapping:
+       // TODO: CS248 Part 3: Normal Mapping:
        // use tan2World in the normal map to compute the
        // world space normal baaed on the normal map.
 
@@ -152,7 +155,7 @@ void main(void)
 
     if (useMirrorBRDF) {
         //
-        // TODO: CS248 Environment Mapping:
+        // TODO: CS248 Part 4: Environment Mapping:
         // compute perfect mirror reflection direction here.
         // You'll also need to implement environment map sampling in SampleEnvironmentMap()
         //

@@ -30,7 +30,7 @@ void main(void)
     position = vec3(obj2world * vec4(vtx_position, 1));
 
     //
-    // TODO CS248 Shadow Mapping:
+    // TODO CS248 Part 5.2: Shadow Mapping:
     //
     // After you have computed in client c++ code the transforms from object space to the 
     // light space, bind the values as a uniform array of mat4 into the vertex
@@ -42,7 +42,7 @@ void main(void)
     // to each shadowed light source.
 
 
-    // TODO CS248 Normal Mapping: compute 3x3 tangent space to world space matrix here: tan2world
+    // TODO CS248 Part 3: Normal Mapping: compute 3x3 tangent space to world space matrix here: tan2world
     //
        
     // Tips:

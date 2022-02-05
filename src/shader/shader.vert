@@ -25,8 +25,9 @@ void main(void)
 {
     position = vec3(obj2world * vec4(vtx_position, 1));
 
-    // TODO CS248 Normal Mapping: compute 3x3 tangent space to world space matrix here: tan2world
-    //
+    // TODO CS248 Part3: Normal Mapping
+    // compute 3x3 tangent space to world space matrix here: tan2world
+    
        
     // Tips:
     //

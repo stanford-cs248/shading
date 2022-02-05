@@ -44,7 +44,7 @@ Matrix4x4 createPerspectiveMatrix(float fovy, float aspect, float near, float fa
 
 Matrix4x4 createWorldToCameraMatrix(const Vector3D& eye, const Vector3D& at, const Vector3D& up) {
 
-  // TODO CS248: Camera Matrix
+  // TODO CS248 Part 1: Coordinate transform
   // Compute the matrix that transforms a point in world space to a point in camera space.
 
   return Matrix4x4::translation(Vector3D(-20,0,-150));
@@ -242,7 +242,7 @@ void Scene::renderShadowPass(int shadowedLightIndex) {
     float near = 10.f;
     float far = 400.;
 
-    // TODO CS248: Shadow Mapping
+    // TODO CS248 Part 5.2 Shadow Mapping
     // Here we render the shadow map for the given light. You need to accomplish the following:
     // (1) You need to use gl_mgr_->bindFrameBuffer on the correct framebuffer to render into.
     // (2) You need to compute the correct worldToLightNDC matrix to pass into drawShadow by

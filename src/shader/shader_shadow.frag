@@ -14,6 +14,8 @@ uniform bool useMirrorBRDF;         // true if mirror brdf should be used (defau
 
 uniform sampler2D diffuseTextureSampler;
 
+// TODO CS248 Part 3: Normal Mapping
+// TODO CS248 Part 4: Environment Mapping
 
 //
 // lighting environment definition. Scenes may contain directional
@@ -75,7 +77,7 @@ vec3 Diffuse_BRDF(vec3 L, vec3 N, vec3 diffuseColor) {
 //
 vec3 Phong_BRDF(vec3 L, vec3 V, vec3 N, vec3 diffuse_color, vec3 specular_color, float specular_exponent)
 {
-    // TODO CS248: Phong Reflectance
+    // TODO CS248 Part 2: Phong Reflectance
     // Implement diffuse and specular terms of the Phong
     // reflectance model here.
 
@@ -89,7 +91,7 @@ vec3 Phong_BRDF(vec3 L, vec3 V, vec3 N, vec3 diffuse_color, vec3 specular_color,
 // 
 vec3 SampleEnvironmentMap(vec3 D)
 {    
-    // TODO CS248 Environment Mapping
+    // TODO CS248 Part 4: Environment Mapping
     // sample environment map in direction D.  This requires
     // converting D into spherical coordinates where Y is the polar direction
     // (warning: in our scene, theta is angle with Y axis, which differs from
@@ -131,7 +133,7 @@ void main(void)
     // perform normal map lookup if required
     vec3 N = vec3(0);
     if (useNormalMapping) {
-       // TODO: CS248 Normal Mapping:
+       // TODO: CS248 Part 3: Normal Mapping:
        // use tan2World in the normal map to compute the
        // world space normal baaed on the normal map.
 
@@ -205,7 +207,7 @@ void main(void)
         vec3 dir_to_surface = position - light_pos;
         float angle = acos(dot(normalize(dir_to_surface), spot_light_directions[i])) * 180.0 / PI;
 
-        // CS248 TODO Spotlight Attenuation: compute the attenuation of the spotlight due to two factors:
+        // TODO CS248 Part 5.1: Spotlight Attenuation: compute the attenuation of the spotlight due to two factors:
         // (1) distance from the spot light (D^2 falloff)
         // (2) attentuation due to being outside the spotlight's cone 
         //
@@ -234,7 +236,7 @@ void main(void)
 
 
         // Render Shadows for all spot lights
-        // CS248 TODO: Shadow Mapping: comute shadowing for spotlight i here 
+        // TODO CS248 Part 5.2: Shadow Mapping: comute shadowing for spotlight i here 
 
 
 	    vec3 L = normalize(-spot_light_directions[i]);

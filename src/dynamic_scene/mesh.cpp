@@ -355,7 +355,7 @@ void Mesh::internalDraw(bool shadowPass, const Matrix4x4& worldToNDC) const {
 
         int numShadowedLights = scene_->getNumShadowedLights();
 
-        // TODO CS248: Shadow Mapping
+        // TODO CS248 Part 5.2: Shadow Mapping
         // You need to pass an array of matrices to the shader.
         // They should go from object space to the "light space" for each spot light.
         // In this way, the shader can compute the texture coordinate to sample from the
@@ -370,15 +370,15 @@ void Mesh::internalDraw(bool shadowPass, const Matrix4x4& worldToNDC) const {
         if (doTextureMapping_)
         	shader_->setTextureSampler("diffuseTextureSampler", diffuseTextureId_);
 
-        // TODO CS248: Normal Mapping:
+        // TODO CS248 Part 3: Normal Mapping:
         // You want to pass the normal texture into the shader program.
         // See diffuseTextureSampler for an example of passing textures.
 
-        // TODO CS248: Environment Mapping:
+        // TODO CS248 Part 4: Environment Mapping:
         // You want to pass the environment texture into the shader program.
         // See diffuseTextureSampler for an example of passing textures.
 
-        // TODO CS248: Shadow Mapping:
+        // TODO CS248 Part 5.2: Shadow Mapping:
         // You want to pass the array of shadow textures computed during shadow pass into the shader program.
         // See Scene::visualizeShadowMap for an example of passing texture arrays.
         // See shadow_viz.frag for an example of using texture arrays in the shader.
