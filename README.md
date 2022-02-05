@@ -2,7 +2,18 @@
 
 ## Due date
 
-The assignment is due Fri Mar 18th, at 11:59:59 PM.
+The assignment is due Feb 18 (Friday), at 11:59 PM.
+
+## Submission Instructions
+Please zip the following files and upload your zipped file to [Gradescope](https://www.gradescope.com/).
+* shading/src folder
+* writeup (.txt, .doc, .pdf)
+
+One team only needs one submission, please tag your teammates in your submission.
+
+### Writeup
+
+Please submit a short document explaining what you have implemented, and any particular details of your submission. If your submission includes any implementations which are not entirely functional, please detail what works and what doesn't, along with where you got stuck. This document does not need to be long; correctly implemented features may simply be listed, and incomplete features should be described in a few sentences at most.
 
 ## Summary
 
@@ -11,7 +22,7 @@ In this assignment, you are a given a simple real-time renderer and a simple 3D 
 ## Build Instructions
 
 In order to ease the process of running on different platforms, we will be using [CMake](http://www.cmake.org/) for our assignments. You will need a CMake installation of version 2.8+ to build the code for this assignment. It should also be relatively easy to build the assignment and work locally on your OSX or 64-bit version of Linux or Windows.
-The project can be run by SSH'ing to rice.stanford.edu with your SUNet ID, password, and two-step authentication (remember to turn on X11 forwarding). If you choose to do so, you can skip over to the next step.
+The project can be run by SSH'ing to rice.stanford.edu with your SUNet ID, password, and two-step authentication (remember to turn on X11 forwarding). 
 The project requires OpenGL version 3.0+.
 
 ### OS X/Linux Build Instructions
@@ -46,19 +57,26 @@ These 3 steps (1) create an out-of-source build directory, (2) configure the pro
 
 ### Windows Build Instructions
 
-You need to install the latest version of [CMake](http://www.cmake.org/) and [Visual Studio](https://www.visualstudio.com/). Visual Studio Community is free. After installing these programs, replace `SOURCE_DIR` to the cloned directory (`shading/` in our case), and `BUILD_DIR` to `SOURCE_DIR/build`.
+You need to install the latest version of [CMake](http://www.cmake.org/) and [Visual Studio](https://www.visualstudio.com/). Visual Studio Community is free.
 
+After installing CMake and Visual Studio, let's start with building in CMake. Replace `SOURCE_DIR` to the cloned directory (`shading/` in our case, NOT `src/`), and `BUILD_DIR` to `draw-svg/build`.
+<!-- 
 ![Sample locations](misc/cmake_initial_setup.png?raw=true)
+ -->
+Then, press `Configure` button, select **Visual Studio 17 2022** for generator and **x64** for platform, and you should see `Configuring done` message. Then, press `Generate` button and you should see `Generating done`.
 
-Then, press `Configure` button, select proper version of Visual Studio (**You should probably select Win64**), and you should see `Configuring done` message. Then, press `Generate` button and you should see `Generating done`.
-
-![Sample locations](misc/cmake_final_setup.png?raw=true)
-
+<!-- ![Sample locations](misc/cmake_final_setup.png?raw=true)
+ -->
 This should create a `build` directory with a Visual Studio solution file in it named `Render.sln`. You can double-click this file to open the solution in Visual Studio.
 
 If you plan on using Visual Studio to debug your program, you must change `render` project in the Solution Explorer as the startup project by right-clicking on it and selecting `Set as StartUp Project`. You can also set the command line arguments to the project by right-clicking `render` project again, selecting `Properties`, going into the `Debugging` tab, and setting the value in `Command Arguments`. If you want to run the program with the test folder, you can set this command argument to `../../media/spheres/spheres.json`. After setting all these, you can hit F5\press `Local Windows Debugger` button to build your program and run it with the debugger.
 
 You should also change the build mode to `Release` from `Debug` occasionally by clicking the Solution Configurations drop down menu on the top menu bar, which will make your program run faster. Note that you will have to set `Command Arguments` again if you change the build mode. Note that your application must run properly in both debug and release build.
+
+**Note**: to avoid the linking error when building x64 (e.g. LNK4272: library machine type 'x86' conflicts with target machine type 'x64', LNK1104: cannot open file freetype.lib.), please make the following changes to your draw-svg project properties (right click `drawsvg` project in the Solution Explorer sidebar to open Properties).
+```
+Properties -> Linker -> Input -> edit -> change freetype.lib to freetype_win64.lib
+```
 
 ## Summary of Viewer Controls
 
@@ -289,15 +307,3 @@ There are many ways to go farther in this assignment.  Some ideas include:
 * Consider adding more sophisticated light types such as area lights via [linear transformed cosine](https://eheitzresearch.wordpress.com/415-2/)
 
 * Improve the shadow mapping algorithm with [cascaded shadow maps](https://developer.download.nvidia.com/SDK/10.5/opengl/src/cascaded_shadow_maps/doc/cascaded_shadow_maps.pdf).
-
-## Writeup
-
-Please submit a short document explaining what you have implemented, and any particular details of your submission. If your submission includes any implementations which are not entirely functional, please detail what works and what doesn't, along with where you got stuck. This document does not need to be long; correctly implemented features may simply be listed, and incomplete features should be described in a few sentences at most.
-
-The writeup must be a pdf, markdown, or plaintext file. Include it in the root directory of your submission as writeup.pdf, writeup.md, or writeup.txt.
-
-Failure to submit this writeup will incur a penalty on the assignment.
-
-## Submission Instructions
-
-We are using [Gradescope](https://www.gradescope.com/) as our submission tool. You should create and upload a zip archive of your __/src__ directory along with the writeup (e.g. writeup.txt). *Please do __NOT__ include your build directory.*
