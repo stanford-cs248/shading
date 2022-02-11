@@ -117,8 +117,8 @@ __IMPORTANT__: If you see a black screen it means your GL environment is not wor
 
 __What you need to do:__ `src/dynamic_scene/scene.cpp:Scene::createWorldToCameraMatrix()`
 
-Notice that when you run `render`, mouse controls like scrolling to rotate the camera or, left/right click-drag do nothing. This is because the starter code does not correctly implement the world space-to-camera space transformation. **Implement** `Scene::createWorldToCameraMatrix()` in `src/dynamic_scene/scene.cpp`.
-Your task is to derive the correct matrix to enable interactive inspection of the scene.
+Notice that when you run `render`, mouse controls like scrolling to rotate the camera or, left/right click-drag do nothing. This is because the starter code does not correctly implement the world space-to-camera space transformation. Implement `Scene::createWorldToCameraMatrix()` in `src/dynamic_scene/scene.cpp`.
+Your task is to derive the correct matrix to enable interactive inspection of the scene. **Careful: CS248::Matrix is in column major.**
 
 A correct implementation will yield the following view, and allow interactive inspection with the mouse!
 
@@ -188,8 +188,8 @@ In `src/shader/shader.frag`, we'd like you to implement a perfectly mirror refle
 
 * Just like with normal mapping, the environment map is not yet passed into the shader. Similar to what you did in normal mapping, you need to bind the environment texture map with handle `environmentTextureId_` to a texture sampler parameter in `shader.frag`.  Recall this is done by making edits to `Mesh::internalDraw` and adding an additional sampler variable to the fragment shader.
 * `dir2camera` in `shader.frag` conveniently gives you the world space direction from the fragment's surface point _to the camera_.  It is not normalized.
-* The function `vec3 SampleEnvironmentMap(vec3 L)` takes as input a direction (outward from the scene), and returns the radiance from the environment light arriving from this direction (this is light arriving at the surface from an infinitely far light source from the direction -L).
-* To perform an environment map lookup, you have to convert the reflection direction from its 3D Euclidean representation to spherical coordinates phi and theta.  In this assignment rendering is set up to use a a right-handed coordinate system (where Y is up, X is pointing to the right, and Z is pointing toward the camera), so you'll need to adjust the standard equations of converting from XYZ to spherical coordinates accordingly.  Specifically, in this assignment, the polar (or zenith) angle __theta__ is the angle between the direction and the Y axis.  The azimuthal angle __phi__ is zero when the direction vector is in the YZ plane, and increases as this vector rotates toward the XY plane.
+* The function `vec3 SampleEnvironmentMap(vec3 D)` takes as input a direction (outward from the scene), and returns the radiance from the environment light arriving from this direction (this is light arriving at the surface from an infinitely far light source from the direction -D).
+* To perform an environment map lookup, you have to convert the reflection direction from its 3D Euclidean representation to spherical coordinates phi and theta.  In this assignment rendering is set up to use a a right-handed coordinate system (where Y is up, X is pointing to the right, and Z is pointing toward the camera), so you'll need to adjust the standard equations of converting from XYZ to spherical coordinates accordingly.  Specifically, in this assignment, the polar (or zenith) angle __theta__ is the angle between the direction and the Y axis.  The azimuthal angle __phi__ is zero when the direction vector is in the YZ plane, and increases as this vector rotates toward the XY plane. Be careful about the range of these two angles.
 
 Once you've correctly implemented an environment map lookups, the rightmost sphere will look as if it's a perfect mirror.
 
@@ -303,7 +303,7 @@ You should be able to adapt this tooling for your own debugging needs.
 
 ### Extra Credit
 
-There are many ways to go farther in this assignment.  Here are a few ideas... however note that the last two in the list below involve significantly more work than extra credits in past assignments, and they could even be reasonable challenges for final projects.
+There are many ways to go farther in this assignment.  Here are a few ideas... however note that the last two in the list below involve significantly more work than extra credits in past assignments, and they could even be reasonable challenges for final projects. Up to 10 points will be awarded at the discretion of the professors and TAs for excellent, high-quality work (the total credits can go up to 110).
 
 * Implement other BRDFs that are interesting to you.  Google terms like "physically based shading".
 
