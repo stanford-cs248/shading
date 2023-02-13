@@ -2,7 +2,7 @@
 
 ## Due date
 
-The assignment is due Feb 18 (Friday), at 11:59 PM.
+The assignment is due Feb 27 (Monday), at 11:59 PM.
 
 ## Submission Instructions
 Please zip the following files and upload your zipped file to [Gradescope](https://www.gradescope.com/).
