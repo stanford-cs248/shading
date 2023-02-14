@@ -103,7 +103,7 @@ We didn't specifically talk about the specifics of GLSL programming in class, so
 
 The client C++ code that makes OpenGL library commands can be quite complicated. Luckily for this assignment, we have abstracted away the messy details of using the OpenGL libreary to a couple of relatively simple APIs in the `GLResourceManager` and `Shader` classes. You will need to look at their header files as well as the example calls in the starter code to see how they can be used. For the adventurous, we encourage you to look at the implementations of these two classes to get a sense on how to use OpenGL, since extra-credit or final project extensions of this assignment likely need to delve deeper.
 
-### Part 1: Coordinate transform (15 pts)
+### Part 1: Coordinate transform (10 pts)
 In the first part of this assignment you will enable interactive inspection of the scene by deriving the correct transformation matrix from world space to camera space.
 To begin, render the spheres scene using the command:
 
@@ -124,7 +124,7 @@ A correct implementation will yield the following view, and allow interactive in
 
 ![Correct World2Cam Transform](misc/step1.png?raw=true)
 
-### Part 2: Implementing Phong Reflectance (15 pts)
+### Part 2: Implementing Phong Reflectance (12 pts)
 
 In the later parts of this assignment you will implement two important aspects of defining a material.  First, you will implement a simple BRDF that implements the phong reflectance model to render a shiny surface.
 
@@ -303,7 +303,9 @@ You should be able to adapt this tooling for your own debugging needs.
 
 ### Extra Credit
 
-There are many ways to go farther in this assignment.  Here are a few ideas... however note that the last two in the list below involve significantly more work than extra credits in past assignments, and they could even be reasonable challenges for final projects. Up to 10 points will be awarded at the discretion of the professors and TAs for excellent, high-quality work (the total credits can go up to 110).
+Notice that the baseline points for the assignment total 92 points.
+
+There are many ways to go farther in this assignment.  Here are a few ideas... however note that the last two in the list below involve significantly more work than extra credits in past assignments, and they could even be reasonable challenges for final projects. Points will be awarded at the discretion of the professors and TAs for excellent, high-quality work (the total credits can go up to 105).  You can also consider some of these extensions as a final project.
 
 * Implement other BRDFs that are interesting to you.  Google terms like "physically based shading".
 
