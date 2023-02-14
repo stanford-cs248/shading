@@ -6,7 +6,7 @@ The assignment is due Feb 27 (Monday), at 11:59 PM.
 
 ## Submission Instructions
 Please zip the following files and upload your zipped file to [Gradescope](https://www.gradescope.com/).
-* shading/src folder
+* `shading/src` folder
 * writeup (.txt, .doc, .pdf)
 
 One team only needs one submission, please tag your teammates in your submission.
