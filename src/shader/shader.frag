@@ -131,7 +131,7 @@ void main(void)
     if (useNormalMapping) {
        // TODO: CS248 Part 3: Normal Mapping:
        // use tan2World in the normal map to compute the
-       // world space normal baaed on the normal map.
+       // world space normal based on the normal map.
 
        // Note that values from the texture should be scaled by 2 and biased
        // by negative -1 to covert positive values from the texture fetch, which
