@@ -150,7 +150,7 @@ Normal mapping works as follows: given a point on the surface, your shader needs
 
 __What you need to do:__ `src/shader/shader.vert` `src/shader/shader.frag` `src/dynamic_scene/mesh.cpp:Mesh::internalDraw()`
 
-First, modify the vertex shader `shader.vert` to compute a transform `tan2World`.  This matrix should convert vectors in tangent space back to world space.  You should think about creating a rotation matrix that converts tangent space to object space, and then applying an additional transformation to move the object space frame world space.  The vertex shader emits `tan2World` for later use in fragment shading.
+First, modify the vertex shader `shader.vert` to compute a transform `tan2World`.  This matrix should convert vectors in tangent space back to world space.  You should think about creating a rotation matrix that converts tangent space to object space, and then applying an additional transformation to move the object space frame to world space.  The vertex shader emits `tan2World` for later use in fragment shading.
 
 * Notice that in `shader.vert` you are given the normal (N) and surface tangent (T) at the current vertex.  But you are not given the third vector, often called the "binormal vector" (B) defining the Y-axis of tangent space.  How do you compute this vector given the normal and tangent?
 * How do you create a rotation matrix that takes tangent space vectors to object space vector?  [See this slide](https://gfxcourses.stanford.edu/cs248/winter22/lecture/transforms/slide_57) for a hint.
